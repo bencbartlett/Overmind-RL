@@ -1,5 +1,5 @@
 (async function () {
-    const { ScreepsServer } = require('screeps-server-mockup');
+    const { ScreepsServer } = require('../src/main.js');
     const server = new ScreepsServer();
 
     try {

@@ -1,3 +1,10 @@
+# Output folders
+server
+logs
+/servers/server*
+*.log
+.nyc_output
+
 # Screeps Config
 screeps.json
 

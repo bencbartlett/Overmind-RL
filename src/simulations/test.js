@@ -1,8 +1,26 @@
 (async function () {
     const _ = require('lodash');
-    const { ScreepsServer, TerrainMatrix } = require('../src/main.js');
+    const path = require('path');
+    const {ScreepsServer, TerrainMatrix} = require('../serverMockup/src/main.js');
 
-    const server = new ScreepsServer();
+    // print process.argv
+    process.argv.forEach(function (val, index, array) {
+        console.log(index + ': ' + val);
+    });
+
+    const appDir = path.dirname(require.main.filename);
+    console.log('appDir:' + appDir);
+
+    const serverIndex = process.argv[2] || 0; // node /path/to/test.js 3 <- creates a third server instance
+    const opts = {
+        path: path.resolve(appDir, '../../servers', `server${serverIndex}`),
+        logdir: path.resolve(appDir, '../../servers', `server${serverIndex}`, 'logs'),
+        port: 21025 + serverIndex,
+        modfile: path.resolve(appDir, "../serverMockup/assets/mods.json")
+    };
+    console.log('opts: ' + JSON.stringify(opts));
+
+    const server = new ScreepsServer(opts);
 
     try {
         // Initialize server
@@ -16,9 +34,17 @@
         // Create a new room with terrain and basic objects
         await server.world.addRoom('W0N1');
         await server.world.setTerrain('W0N1', terrain);
-        await server.world.addRoomObject('W0N1', 'controller', 10, 10, { level: 0 });
-        await server.world.addRoomObject('W0N1', 'source', 10, 40, { energy: 1000, energyCapacity: 1000, ticksToRegeneration: 300 });
-        await server.world.addRoomObject('W0N1', 'mineral', 40, 40, { mineralType: 'H', density: 3, mineralAmount: 3000 });
+        await server.world.addRoomObject('W0N1', 'controller', 10, 10, {level: 0});
+        await server.world.addRoomObject('W0N1', 'source', 10, 40, {
+            energy: 1000,
+            energyCapacity: 1000,
+            ticksToRegeneration: 300
+        });
+        await server.world.addRoomObject('W0N1', 'mineral', 40, 40, {
+            mineralType: 'H',
+            density: 3,
+            mineralAmount: 3000
+        });
 
         // Add a bot in W0N1
         const modules = {
@@ -29,7 +55,7 @@
                 _.each(Game.creeps, c => c.move(_.sample(directions)));
             };`,
         };
-        const bot = await server.world.addBot({ username: 'bot', room: 'W0N1', x: 25, y: 25, modules });
+        const bot = await server.world.addBot({username: 'bot', room: 'W0N1', x: 25, y: 25, modules});
 
         // Print console logs every tick
         bot.on('console', (logs, results, userid, username) => {
@@ -41,7 +67,7 @@
         for (let i = 0; i < 10; i += 1) {
             console.log('[tick]', await server.world.gameTime);
             await server.tick();
-            _.each(await bot.newNotifications, ({ message }) => console.log('[notification]', message));
+            _.each(await bot.newNotifications, ({message}) => console.log('[notification]', message));
             console.log('[memory]', await bot.memory, '\n');
         }
     } catch (err) {

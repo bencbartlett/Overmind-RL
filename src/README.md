@@ -1,0 +1,1 @@
+This submodule is adapted from https://github.com/Hiryus/screeps-server-mockup, with tweaks and additional functionality added

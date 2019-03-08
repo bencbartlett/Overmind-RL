@@ -34,6 +34,10 @@ class ScreepsServer extends EventEmitter {
         Define server options and set defaults.
     */
     setOpts(opts = {}) {
+        // Determine server instance
+        if (opts.serverIndex) {
+
+        }
         // Assign options
         this.opts = Object.assign({
             path:   path.resolve('server'),

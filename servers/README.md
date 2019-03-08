@@ -1,0 +1,1 @@
+Servers can be started and run in parallel; server outputs will be saved to this folder.
