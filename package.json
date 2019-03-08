@@ -1,0 +1,27 @@
+{
+  "name": "Overmind-RL",
+  "version": "0.0.0",
+  "description": "Reinforcement learning for Screeps",
+  "author": "Ben Bartlett",
+  "license": "MIT",
+  "scripts": {
+    "coverage": "nyc mocha --ui tdd --exit",
+    "lint": "eslint src examples test",
+    "publish": "bash scripts/publish.sh",
+    "test": "mocha --ui tdd --exit"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "5.4.0",
+    "eslint-config-airbnb-base": "13.1.0",
+    "eslint-plugin-import": "2.14.0",
+    "mocha": "5.2.0",
+    "npm-cli-login": "0.0.10",
+    "nyc": "13.0.1"
+  },
+  "dependencies": {
+    "fs-extra-promise": "1.0.1",
+    "lodash": "4.17.10",
+    "screeps": "2.13.2"
+  }
+}

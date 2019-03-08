@@ -1,0 +1,12 @@
+{
+    "env": {
+        "mocha": true,
+        "es6": true
+    },
+    "parser": "babel-eslint",
+    "rules": {
+        "no-console": "off",
+        "no-unused-vars": "off",
+        "prefer-arrow-callback": "off"
+    }
+}
