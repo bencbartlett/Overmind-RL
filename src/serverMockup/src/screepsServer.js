@@ -34,10 +34,6 @@ class ScreepsServer extends EventEmitter {
         Define server options and set defaults.
     */
     setOpts(opts = {}) {
-        // Determine server instance
-        if (opts.serverIndex) {
-
-        }
         // Assign options
         this.opts = Object.assign({
             path:   path.resolve('server'),
@@ -100,8 +96,8 @@ class ScreepsServer extends EventEmitter {
     */
     async tick() {
         await driver.notifyTickStarted();
-        const users = await driver.getAllUsers();
-        await this.usersQueue.addMulti(_.map(users, user => user._id.toString()));
+        let users = await driver.getAllUsers();
+        await this.usersQueue.addMulti(_.map(users.ivm, user => user._id.toString()));
         await this.usersQueue.whenAllDone();
         const rooms = await driver.getAllRooms();
         await this.roomsQueue.addMulti(_.map(rooms, room => room._id.toString()));

@@ -23,6 +23,6 @@
     "fs-extra-promise": "1.0.1",
     "lodash": "4.17.10",
     "onnxjs": "^0.1.4",
-    "screeps": "2.13.2"
+    "screeps": "^3.2.1"
   }
 }

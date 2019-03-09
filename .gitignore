@@ -1,6 +1,6 @@
 # Output folders
 server
-logs
+/src/bots/overmind.js
 /servers/server*
 *.log
 .nyc_output
