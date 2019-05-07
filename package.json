@@ -4,6 +4,10 @@
   "description": "Reinforcement learning for Screeps",
   "author": "Ben Bartlett",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bencbartlett/Overmind-RL.git"
+  },
   "scripts": {
     "coverage": "nyc mocha --ui tdd --exit",
     "lint": "eslint src examples test",
@@ -22,7 +26,8 @@
   "dependencies": {
     "fs-extra-promise": "1.0.1",
     "lodash": "4.17.10",
-    "onnxjs": "^0.1.4",
-    "screeps": "^3.2.1"
+    "onnxjs": "^0.1.6",
+    "screeps": "^3.4.3",
+    "zerorpc": "^0.9.8"
   }
 }
