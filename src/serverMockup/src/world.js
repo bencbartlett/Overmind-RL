@@ -5,6 +5,7 @@ const util = require('util');
 const zlib = require('zlib');
 const TerrainMatrix = require('./terrainMatrix');
 const User = require('./user');
+const map = require('@screeps/backend/lib/cli/map');
 
 class World {
 
@@ -55,6 +56,38 @@ class World {
 	}
 
 	/**
+	 * Get a random unoccupied position in a room
+	 */
+	async getOpenPosition(room) {
+		const terrain = await this.getTerrain(room);
+		const objects = await this.roomObjects(room);
+		let okPos = false;
+		let x, y;
+		while (!okPos) {
+			okPos = true;
+
+			// get a random position not on edges
+			x = _.random(1, 49);
+			y = _.random(1, 49);
+
+			// make sure it's not on a wall
+			if (terrain.get(x, y) === 'wall') {
+				okPos = false;
+			}
+
+			// make sure there's nothing blocking movement
+			for (let obj of objects) {
+				if (obj.x === x && obj.y === y) {
+					if (!(obj.type === 'road' || obj.type === 'container' /* TODO: friendly ramparts */)) {
+						okPos = false;
+					}
+				}
+			}
+		}
+		return [x,y];
+	}
+
+	/**
 	 * Return room terrain data (walls, plains and swamps)
 	 * Return a TerrainMatrix instance
 	 */
@@ -90,6 +123,8 @@ class World {
 		}
 		// Update environment cache
 		await this.updateEnvTerrain(db, env);
+		// Update the map images
+		await map.updateRoomImageAssets(room);
 	}
 
 	/**
@@ -110,14 +145,22 @@ class World {
 	 * Reset world data to a barren world with invaders and source keepers users
 	 */
 	async reset() {
+
 		const {db, env} = await this.load();
+
+		// Clear existing room caches
+		const rooms = await db.rooms.find({});
+		await Promise.all(rooms.map(room => env.del(env.keys.MAP_VIEW + room._id)));
+
 		// Clear database
 		await Promise.all(_.map(db, col => col.clear()));
 		await env.set('gameTime', 1);
-		// Generate basic terrain data
-		const terrain = new TerrainMatrix();
-		const walls = [[10, 10], [10, 40], [40, 10], [40, 40]];
-		_.each(walls, ([x, y]) => terrain.set(x, y, 'wall'));
+
+		// // Generate basic terrain data
+		// const terrain = new TerrainMatrix();
+		// const walls = [[10, 10], [10, 40], [40, 10], [40, 40]];
+		// _.each(walls, ([x, y]) => terrain.set(x, y, 'wall'));
+
 		// Insert basic room data
 		await Promise.all([
 							  db.users.insert({
@@ -209,6 +252,21 @@ class World {
 															 spawning: null,
 															 notifyWhenAttacked: true
 														 }),
+						  ]);
+		// Subscribe to console notificaiton and return emitter
+		return new User(this.server, user).init();
+	}
+
+	/**
+	 * Add a new user to the world without adjusting room properties
+	 */
+	async addHeadlessBot({username, gcl = 1, cpu = 100, cpuAvailable = 10000, active = 10000, modules = {}}) {
+		const {C, db, env} = await this.load();
+		// Insert user and update data
+		const user = await db.users.insert({username, cpu, cpuAvailable, gcl, active});
+		await Promise.all([
+							  env.set(env.keys.MEMORY + user._id, '{}'),
+							  db['users.code'].insert({user: user._id, branch: 'default', modules, activeWorld: true}),
 						  ]);
 		// Subscribe to console notificaiton and return emitter
 		return new User(this.server, user).init();

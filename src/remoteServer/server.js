@@ -1,5 +1,5 @@
 const zerorpc = require('zerorpc');
-const RemoteServer = require('./serverInterface');
+const ScreepsEnvironment = require('./environment');
 
 process.argv.forEach(function (val, index, array) {
 	console.log(index + ': ' + val);
@@ -7,35 +7,47 @@ process.argv.forEach(function (val, index, array) {
 
 const index = parseInt(process.argv[2], 10) || 0; // index of server
 
-const server = new RemoteServer(index);
+const env = new ScreepsEnvironment(index);
 
-const rpcServer = new zerorpc.Server(
+const server = new zerorpc.Server(
 	{
 		test: function (reply) {
-			server.test().then(res => reply(null, res)).catch(err => reply(err));
+			env.test().then(res => reply(null, res)).catch(err => reply(err));
+		},
+
+		resetWorld: function(reply) {
+			env.resetWorld().then(res => reply(null, res)).catch(err => reply(err));
+		},
+
+		resetTrainingEnvironment: function(reply) {
+			env.resetTrainingEnvironment().then(res => reply(null, res)).catch(err => reply(err));
 		},
 
 		initializeServer: function (reply) {
-			server.initializeServer().then(res => reply(null, res)).catch(err => reply(err));
+			env.initializeServer().then(res => reply(null, res)).catch(err => reply(err));
 		},
 
 		startServer: function (reply) {
-			server.startServer().then(res => reply(null, res)).catch(err => reply(err));
+			env.startServer().then(res => reply(null, res)).catch(err => reply(err));
+		},
+
+		startBackend: function (reply) {
+			env.startBackend().then(res => reply(null, res)).catch(err => reply(err));
 		},
 
 		tick: function (reply) {
-			server.tick().then(res => reply(null, res)).catch(err => reply(err));
+			env.tick().then(res => reply(null, res)).catch(err => reply(err));
 		},
 
 		stopServer: function (reply) {
-			server.stopServer().then(res => reply(null, res)).catch(err => reply(err));
+			env.stopServer().then(res => reply(null, res)).catch(err => reply(err));
 		},
 
 		exit: function (reply) {
 			reply(null, 0);
-			server.exit();
+			env.exit();
 		},
 	}
 );
 
-rpcServer.bind(`tcp://0.0.0.0:${server.commsPort}`);
+server.bind(`tcp://0.0.0.0:${env.commsPort}`);

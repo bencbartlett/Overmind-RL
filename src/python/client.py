@@ -7,9 +7,10 @@ class ScreepsEnvironment:
 
     def __init__(self, index):
         self.index = index
-        self.port = index + 22025
+        self.gamePort = 21025 + 5 * index
+        self.port = 22025 + 5 * index
 
-        print("Starting remote server at " + str(self.port) + "...")
+        print("Starting remote server at " + str(self.gamePort) + "...")
         self.serverprocess = Popen(["node", "../remoteServer/server.js", str(self.index)])
 
 
@@ -17,24 +18,35 @@ class ScreepsEnvironment:
         self.c.connect("tcp://127.0.0.1:"+str(self.port))
         print("Connected")
 
-    def run(self):
-        print(f"Test1: {self.c.test()}")
-        print(f"Test2: {self.c.test()}")
-        print(f"Test3: {self.c.test()}")
+    def reset(self):
+        '''Reset the server environment'''
+        print("Resetting training environment")
+        self.c.resetTrainingEnvironment()
 
-        print("Initializing")
-        self.c.initializeServer()
-
-        print("Starting")
+    def start_server(self):
+        '''Start the server'''
+        print("Starting processor")
         self.c.startServer()
 
-        for tick in range(100):
-            print("Running tick "+str(tick))
-            start = time()
-            tick = self.c.tick()
-            print(f"Time elapsed RPC: {time() - start}")
-            print("Reply: "+str(tick))
+    def start_backend(self):
+        '''Start the backend, necessary if you want to view the world with the Screeps client'''
+        print("Starting backend")
+        self.c.startBackend()
 
+    def tick(self):
+        '''Run for a tick'''
+        start = time()
+        tick = self.c.tick()
+        print(f"Time elapsed RPC: {time() - start}")
+        print("Reply: "+str(tick))
+
+    def run(self, ticks=100):
+        '''Run for many ticks'''
+        for tick in range(ticks):
+            self.tick()
+
+    def close(self):
+        '''Close child processes'''
         print("Stopping")
         self.c.stopServer()
 
@@ -50,5 +62,8 @@ class ScreepsEnvironment:
         
 
 if __name__ == "__main__":
-    env = ScreepsEnvironment(14)
-    env.run()
+    env = ScreepsEnvironment(0)
+    env.reset()
+    env.start_server()
+    env.run(100)
+    env.close()
