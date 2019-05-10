@@ -2,7 +2,7 @@
 	const _ = require('lodash');
 	const fs = require('fs');
 	const path = require('path');
-	const {ScreepsServer, TerrainMatrix} = require('../serverMockup/src/main.js');
+	const {ScreepsServer, TerrainMatrix} = require('../src/main.js');
 
 	// print process.argv
 	process.argv.forEach(function (val, index, array) {

@@ -1,7 +1,7 @@
 /* eslint global-require: "off" */
 
 const assert = require('assert');
-const fs = require('fs-extra-promise');
+const fs = require('fs-extra-promise/lib');
 const _ = require('lodash');
 const path = require('path');
 const { ScreepsServer, stdHooks } = require('../src/main');

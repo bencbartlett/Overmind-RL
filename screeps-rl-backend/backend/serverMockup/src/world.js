@@ -84,7 +84,7 @@ class World {
 				}
 			}
 		}
-		return [x,y];
+		return [x, y];
 	}
 
 	/**
@@ -260,10 +260,26 @@ class World {
 	/**
 	 * Add a new user to the world without adjusting room properties
 	 */
-	async addHeadlessBot({username, gcl = 1, cpu = 100, cpuAvailable = 10000, active = 10000, modules = {}}) {
+	async addHeadlessBot({username, gcl = 1, cpu = 100, cpuAvailable = 10000, active = 10000, modules = {}, badgeColor = undefined}) {
 		const {C, db, env} = await this.load();
 		// Insert user and update data
 		const user = await db.users.insert({username, cpu, cpuAvailable, gcl, active});
+
+		if (badgeColor) {
+			await db.users.update({username: username}, {
+				$set: {
+					badge: {
+						type: 1,
+						color1: badgeColor,
+						color2: badgeColor,
+						color3: badgeColor,
+						param: 0,
+						flip: false
+					}
+				}
+			});
+		}
+
 		await Promise.all([
 							  env.set(env.keys.MEMORY + user._id, '{}'),
 							  db['users.code'].insert({user: user._id, branch: 'default', modules, activeWorld: true}),

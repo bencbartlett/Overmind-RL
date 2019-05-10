@@ -2,7 +2,7 @@
 
 const cp = require('child_process');
 const {EventEmitter} = require('events');
-const fs = require('fs-extra-promise');
+const fs = require('fs-extra-promise/lib');
 const _ = require('lodash');
 const path = require('path');
 const common = require('@screeps/common');

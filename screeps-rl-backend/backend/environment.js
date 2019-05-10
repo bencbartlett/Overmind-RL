@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
-const {ScreepsServer, TerrainMatrix} = require('../serverMockup/src/main.js');
+const {ScreepsServer, TerrainMatrix} = require('./serverMockup/src/main.js');
 
 const C = require('@screeps/driver').constants;
 
@@ -69,8 +69,8 @@ class ScreepsEnvironment {
 		await this.server.world.setTerrain(ROOM, terrain);
 
 		// Add two players
-		const agent1 = await this.addAgent('Agent1');
-		const agent2 = await this.addAgent('Agent2');
+		const agent1 = await this.addAgent('Agent1', "FF0000");
+		const agent2 = await this.addAgent('Agent2', "0000FF");
 
 		// Add a creep to each
 		const body = [{type: 'attack', hits: 100, boost: undefined}, {type: 'move', hits: 100, boost: undefined}];
@@ -83,7 +83,7 @@ class ScreepsEnvironment {
 
 	}
 
-	async addAgent(username) {
+	async addAgent(username, badgeColor = undefined) {
 
 		const _script = `module.exports.loop = function() {
 		        console.log('Tick!',Game.time);
@@ -96,7 +96,7 @@ class ScreepsEnvironment {
 			main: _script,
 		};
 
-		const bot = await this.server.world.addHeadlessBot({username, modules});
+		const bot = await this.server.world.addHeadlessBot({username, modules, badgeColor});
 
 		// Print console logs every tick
 		bot.on('console', (logs, results, userid, username) => {
@@ -188,12 +188,7 @@ class ScreepsEnvironment {
 	}
 
 	async tick() {
-		let start = new Date();
 		await this.server.tick();
-		let end = new Date();
-		let timeDiff = (end - start) / 1000;
-		console.log(`Time elapsed: ${timeDiff}`);
-		return this.server.world.gameTime;
 	}
 
 	async stopServer() {

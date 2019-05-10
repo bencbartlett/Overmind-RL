@@ -9,10 +9,10 @@
     "url": "git+https://github.com/bencbartlett/Overmind-RL.git"
   },
   "scripts": {
-    "coverage": "nyc mocha --ui tdd --exit",
-    "lint": "eslint src examples test",
+    "coverage": "../node_modules/.bin/nyc mocha --ui tdd --exit",
+    "lint": "../node_modules/.bin/eslint src examples test",
     "publish": "bash scripts/publish.sh",
-    "test": "mocha --ui tdd --exit"
+    "test": "../node_modules/.bin/mocha --ui tdd --exit"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.1",

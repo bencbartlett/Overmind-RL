@@ -12,7 +12,6 @@ screeps.json
 # Ignore basic folders
 /dist
 /node_modules
-**/node_modules
 /typings
 /.rpt2_cache
 /tsc-out
