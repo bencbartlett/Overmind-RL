@@ -1,6 +1,4 @@
 {
-	"mods":[
-		"mods/tick-duration.js"
-	],
+	"mods":[],
 	"bots":{}
 }

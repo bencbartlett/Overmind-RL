@@ -30,6 +30,7 @@ class ScreepsServer extends EventEmitter {
 		this.processes = {};
 		this.world = new World(this);
 		this.setOpts(opts);
+		this.started = false;
 	}
 
 	/*
@@ -133,6 +134,7 @@ class ScreepsServer extends EventEmitter {
 		await driver.updateAccessibleRoomsList();
 		await driver.notifyRoomsDone(gameTime);
 		await driver.config.mainLoopCustomStage();
+		// return gameTime;
 	}
 
 	/*
@@ -160,6 +162,11 @@ class ScreepsServer extends EventEmitter {
 		Start processes and connect driver.
 	*/
 	async start() {
+
+		if (this.started) {
+			console.log(`Server is already started!`);
+			return this;
+		}
 
 		this.emit('info', `Server version ${require('screeps').version}`);
 		if (!this.connected) {
@@ -190,6 +197,8 @@ class ScreepsServer extends EventEmitter {
 			ASSET_DIR: this.opts.assetsDir
 		});
 
+		this.started = true;
+
 		return this;
 	}
 
@@ -210,11 +219,26 @@ class ScreepsServer extends EventEmitter {
 
 	}
 
-	/*
-		Stop most processes (it is not perfect though as some remain).
-	*/
+	/**
+	 * Stop runner, processor, and backend processes while leaving storage open
+	 */
 	stop() {
-		_.each(this.processes, process => process.kill());
+		const toKill = _.compact([
+			this.processes['engine_runner'],
+			this.processes['engine_processor'],
+			this.processes['backend_local']
+		]);
+		_.forEach(toKill, process=>process.kill());
+		this.started = false;
+		return this;
+	}
+
+	/**
+	 * Stop most processes (it is not perfect though as some remain).
+	 */
+	kill() {
+		_.forEach(this.processes, process => process.kill());
+		this.started = false;
 		return this;
 	}
 }

@@ -102,7 +102,7 @@ suite('World tests', function () {
         await server.world.addRoomObject('W0N1', 'source', 10, 40, { energy: 1000, energyCapacity: 1000, ticksToRegeneration: 300 });
         await server.world.addRoomObject('W0N1', 'mineral', 40, 40, { mineralType: 'H', density: 3, mineralAmount: 3000 });
         // Listing all RoobObjects in W0N1 and assert if they are correct
-        const objects = await server.world.roomObjects('W0N1');
+        const objects = await server.world.getRoomObjects('W0N1');
         const source = _.find(objects, { type: 'source' });
         const mineral = _.find(objects, { type: 'mineral' });
         assert.equal(objects.length, 2);

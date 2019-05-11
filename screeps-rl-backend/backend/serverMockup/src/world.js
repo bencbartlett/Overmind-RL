@@ -60,7 +60,7 @@ class World {
 	 */
 	async getOpenPosition(room) {
 		const terrain = await this.getTerrain(room);
-		const objects = await this.roomObjects(room);
+		const objects = await this.getRoomObjects(room);
 		let okPos = false;
 		let x, y;
 		while (!okPos) {
@@ -142,6 +142,24 @@ class World {
 	}
 
 	/**
+	 * Get the roomObjects list for requested roomName
+	 */
+	async getRoomObjects(roomName) {
+		const {db} = await this.load();
+		return db['rooms.objects'].find({room: roomName});
+	}
+
+	async getEventLog(roomName) {
+		const {env} = await this.load();
+		return await env.hget(env.keys.ROOM_EVENT_LOG, roomName);
+	}
+
+	async getAllEventLogs() {
+		const {env} = await this.load();
+		return await env.get(env.keys.ROOM_EVENT_LOG);
+	}
+
+	/**
 	 * Reset world data to a barren world with invaders and source keepers users
 	 */
 	async reset() {
@@ -203,14 +221,6 @@ class World {
 			const terrain = TerrainMatrix.unserialize(data.serial);
 			return addRoom(roomName, terrain, data.objects);
 		}));
-	}
-
-	/**
-	 * Get the roomObjects list for requested roomName
-	 */
-	async roomObjects(roomName) {
-		const {db} = await this.load();
-		return db['rooms.objects'].find({room: roomName});
 	}
 
 	/**
