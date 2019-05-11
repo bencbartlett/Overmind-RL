@@ -1,3 +1,4 @@
+import json
 from subprocess import Popen
 from time import time
 
@@ -114,12 +115,19 @@ class ScreepsInterface:
 
     def send_all_actions(self, actions):
         """
-        Writes the serialized actions to the user memory segments
+        Writes the serialized actions to the user memory
         :param actions: a dictionary of {username: {creepName: [list of actions and arguments] } }
         """
         for username, user_actions in actions.items():
             # self.c.setMemorySegment(username, RL_ACTION_SEGMENT, user_actions)
             self.c.setMemory(username, user_actions)
+
+    def send_action(self, action, username):
+        """
+        Writes the serialized action to the user memory
+        :param action: a dictionary of {creepName: [list of actions and arguments] }
+        """
+        self.c.setMemory(username, action)
 
     def close(self):
         """Close child processes"""
@@ -139,11 +147,11 @@ class ScreepsInterface:
 if __name__ == "__main__":
     env = ScreepsInterface(0)
     env.reset()
-    # for tick in range(100):
-    #     actions = {"Agent1": "{'test':" + str(tick) + "}",
-    #                "Agent2": "{'test':" + str(tick + 1) + "}"}
-    #     env.send_all_actions(actions)
-    #     ret = env.tick()
-    #     print(f"Response: {ret}")
-    env.run(100)
+    for tick in range(20):
+        actions = {"Agent1": json.dumps({"a1c1": [["move", tick % 8 + 1]]}),
+                   "Agent2": json.dumps({"a2c1": [["move", tick % 8 + 1]]})}
+        env.send_all_actions(actions)
+        ret = env.tick()
+        print(f"Response: {ret}")
+    # env.run(100)
     env.close()

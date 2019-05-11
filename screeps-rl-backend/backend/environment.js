@@ -8,6 +8,8 @@ const C = require('@screeps/driver').constants;
 const ROOM = 'W0N1';
 const RL_ACTION_SEGMENT = 70;
 
+const OVERMIND_PATH = "../../../Overmind/dist/main.js";
+
 class ScreepsEnvironment {
 
     /**
@@ -84,6 +86,9 @@ class ScreepsEnvironment {
 
     async addAgent(username, badgeColor = undefined) {
 
+        const overmindPath = path.resolve(__dirname, '../bots/overmind.js');
+		const script = fs.readFileSync(overmindPath, 'utf8');
+
         const _script = `module.exports.loop = function() {
 		        console.log('Tick!',Game.time);
 		        const directions = [TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT, TOP_LEFT];
@@ -99,7 +104,7 @@ class ScreepsEnvironment {
 		    };`;
 
         const modules = {
-            main: _script,
+            main: script,
         };
 
         const bot = await this.server.world.addHeadlessBot({username, modules, badgeColor});
@@ -202,6 +207,7 @@ class ScreepsEnvironment {
 
     /**
      * Set the contents of a user's memory segment
+     * TODO: this is broken and I don't know why; use setMemory() instead
      */
     async setMemorySegment(username, segment, contents) {
         const {db, env} = await this.server.world.load();
@@ -218,10 +224,10 @@ class ScreepsEnvironment {
     async setMemory(username, contents) {
         const {db, env} = await this.server.world.load();
         const {_id} = await db.users.findOne({username: username});
-        console.log(`Setting user memory ${username} with id ${_id} to ${contents}`);
+        // console.log(`Setting user memory ${username} with id ${_id} to ${contents}`);
         await env.set(env.keys.MEMORY + _id, contents);
         const mem = await env.get(env.keys.MEMORY + _id);
-        console.log(`Memory: ${mem}`)
+        // console.log(`Memory: ${mem}`)
     }
 
     /**
