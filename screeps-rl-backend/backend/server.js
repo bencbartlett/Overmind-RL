@@ -20,6 +20,7 @@ const methods = [
     env.getRoomTerrain,
     env.getRoomObjects,
     env.getEventLog,
+    env.sendCommands,
     env.setMemory,
     env.setMemorySegment,
     // env.exit

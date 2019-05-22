@@ -8,7 +8,7 @@ const C = require('@screeps/driver').constants;
 const ROOM = 'W0N1';
 const RL_ACTION_SEGMENT = 70;
 
-const OVERMIND_PATH = "../../../Overmind/dist/main.js";
+// const OVERMIND_PATH = "../../../Overmind/dist/main.js";
 
 class ScreepsEnvironment {
 
@@ -87,7 +87,7 @@ class ScreepsEnvironment {
     async addAgent(username, badgeColor = undefined) {
 
         const overmindPath = path.resolve(__dirname, '../bots/overmind.js');
-		const script = fs.readFileSync(overmindPath, 'utf8');
+        const script = fs.readFileSync(overmindPath, 'utf8');
 
         const _script = `module.exports.loop = function() {
 		        console.log('Tick!',Game.time);
@@ -100,6 +100,7 @@ class ScreepsEnvironment {
 		        console.log('Memory ', JSON.stringify(Memory));
 		        console.log('Segment 70: ', RawMemory.segments[70]);
 		        console.log('Segment 71: ', RawMemory.segments[71]);
+		        console.log('Shard: ', Game.shard.name);
 		        _.each(Game.creeps, c => c.move(_.sample(directions)));
 		    };`;
 
@@ -228,6 +229,14 @@ class ScreepsEnvironment {
         await env.set(env.keys.MEMORY + _id, contents);
         const mem = await env.get(env.keys.MEMORY + _id);
         // console.log(`Memory: ${mem}`)
+    }
+
+    /**
+     * Set the contents of a user's Memory.reinforcementLearning object
+     */
+    async sendCommands(username, contents) {
+        const rlObjectStringified = '{"reinforcementLearning":' + contents + '}';
+        await this.setMemory(username, rlObjectStringified);
     }
 
     /**

@@ -2,12 +2,15 @@ import json
 from subprocess import Popen
 from time import time
 
+import os
 import numpy as np
 import zerorpc
 
 ROOM = "W0N1"  # default room
-PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
+BACKEND_RELATIVE_PATH = "../../screeps-rl-backend/backend/server.js"
+BACKEND_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), BACKEND_RELATIVE_PATH)
 RL_ACTION_SEGMENT = 70
+
 
 
 class ScreepsInterface:
@@ -31,11 +34,11 @@ class ScreepsInterface:
     def _start_server(self):
 
         print("Starting remote server at " + str(self.gamePort) + "...")
-        self.server_process = Popen(["node", PATH_TO_BACKEND, str(self.index)])
+        self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
 
         self.c = zerorpc.Client()
-        self.c.connect("tcp://127.0.0.1:" + str(self.port))
-        print("Connected")
+        response = self.c.connect("tcp://127.0.0.1:" + str(self.port))
+        print(f"Connected; response: {response}")
 
         # print("Starting processor")
         # self.c.startServer()
@@ -62,9 +65,9 @@ class ScreepsInterface:
 
     def tick(self):
         """Run for a tick"""
-        start = time()
+        # start = time()
         self.c.tick()
-        print(f"Time elapsed RPC: {time() - start}")
+        # print(f"Time elapsed RPC: {time() - start}")
 
     def run(self, ticks = 100):
         """Run for many ticks"""
@@ -113,21 +116,21 @@ class ScreepsInterface:
             "eventLog"   : self._get_room_event_log(room)
         }
 
-    def send_all_actions(self, actions):
+    def send_all_actions(self, all_actions):
         """
         Writes the serialized actions to the user memory
-        :param actions: a dictionary of {username: {creepName: [list of actions and arguments] } }
+        :param all_actions: a dictionary of {username: {creepName: [list of actions and arguments] } }
         """
-        for username, user_actions in actions.items():
+        for username, user_actions in all_actions.items():
             # self.c.setMemorySegment(username, RL_ACTION_SEGMENT, user_actions)
-            self.c.setMemory(username, user_actions)
+            self.c.sendCommands(username, user_actions)
 
-    def send_action(self, action, username):
+    def send_action(self, actions, username):
         """
         Writes the serialized action to the user memory
-        :param action: a dictionary of {creepName: [list of actions and arguments] }
+        :param actions: a dictionary of {creepName: [list of actions and arguments] }
         """
-        self.c.setMemory(username, action)
+        self.c.sendCommands(username, actions)
 
     def close(self):
         """Close child processes"""
@@ -152,6 +155,9 @@ if __name__ == "__main__":
                    "Agent2": json.dumps({"a2c1": [["move", tick % 8 + 1]]})}
         env.send_all_actions(actions)
         ret = env.tick()
-        print(f"Response: {ret}")
+        state = env.get_room_state()
+        objects = state["roomObjects"]
+        [print(obj["name"], obj["x"], obj["y"]) for obj in objects]
+        # print(f"Response: {ret}")
     # env.run(100)
     env.close()

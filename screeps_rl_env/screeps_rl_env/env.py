@@ -3,7 +3,7 @@ import json
 import gym
 import numpy as np
 
-from screeps_rl_env import ScreepsInterface
+from screeps_rl_env.interface import ScreepsInterface
 
 PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
 
@@ -32,10 +32,10 @@ class ScreepsEnv(gym.Env):
         room_objects = room_state["roomObjects"]
         event_log = room_state["eventLog"]
 
-        enemy_creeps = list(filter(lambda obj: obj["type"] == "creep" and obj["name"] == "a2c1", event_log))
+        enemy_creeps = list(filter(lambda obj: obj["type"] == "creep" and obj["name"] == "a2c1", room_objects))
         enemy_creep = enemy_creeps[0] if len(enemy_creeps) > 0 else None
 
-        my_creeps = list(filter(lambda obj: obj["type"] == "creep" and obj["name"] == "a1c1", event_log))
+        my_creeps = list(filter(lambda obj: obj["type"] == "creep" and obj["name"] == "a1c1", room_objects))
         my_creep = my_creeps[0] if len(my_creeps) > 0 else None
 
         if enemy_creep is not None and my_creep is not None:
@@ -49,7 +49,7 @@ class ScreepsEnv(gym.Env):
         :param action: int, direction to move (1-8, inclusive)
         :return: JSON-formatted command to tell the creep to move
         """
-        return json.dumps({"a1c1": ["move", action]})
+        return json.dumps({"a1c1": [["move", action]]})
 
     # gym.Env methods ==================================================================================================
 
@@ -99,7 +99,8 @@ class ScreepsEnv(gym.Env):
         """Reset the server environment"""
         self.interface.reset()
         self.interface.tick()
-        return self.interface.get_room_state()
+        state = self.interface.get_room_state()
+        return self._process_room_state(state)
 
     def render(self, mode = 'human'):
         print("Run the environment with use_backend=True to connect the Screeps client")
