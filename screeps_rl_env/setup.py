@@ -23,6 +23,7 @@ setuptools.setup(
         "scipy",
         "pytorch",
         "gym",
+        "ray",
         "tqdm",
         "zerorpc"
     ],
