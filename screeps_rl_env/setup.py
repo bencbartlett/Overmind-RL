@@ -21,10 +21,12 @@ setuptools.setup(
     install_requires=[
         "numpy",
         "scipy",
-        "pytorch",
+        "torch",
         "gym",
         "ray",
         "tqdm",
-        "zerorpc"
+        "zerorpc",
+        "opencv-python-headless",
+        "lz4"
     ],
 )

@@ -43,40 +43,13 @@ serverMethods.exit = function (reply) {
     env.exit();
 };
 
-// const server = new zerorpc.Server(
-//     {
-//
-//         resetWorld: function (reply) {
-//             env.resetWorld().then(res => reply(null, res)).catch(err => reply(err));
-//         },
-//
-//         resetTrainingEnvironment: function (reply) {
-//             env.resetTrainingEnvironment().then(res => reply(null, res)).catch(err => reply(err));
-//         },
-//
-//         startBackend: function (reply) {
-//             env.startBackend().then(res => reply(null, res)).catch(err => reply(err));
-//         },
-//
-//         tick: function (reply) {
-//             env.tick().then(res => reply(null, res)).catch(err => reply(err));
-//         },
-//
-//         startServer: function (reply) {
-//             env.startServer().then(res => reply(null, res)).catch(err => reply(err));
-//         },
-//
-//         stopServer: function (reply) {
-//             env.stopServer().then(res => reply(null, res)).catch(err => reply(err));
-//         },
-//
-//         exit: function (reply) {
-//             reply(null, 0);
-//             env.exit();
-//         },
-//     }
-// );
 
 const server = new zerorpc.Server(serverMethods);
 
-server.bind(`tcp://0.0.0.0:${env.commsPort}`);
+try {
+    server.bind(`tcp://0.0.0.0:${env.commsPort}`);
+} catch (e) {
+    console.log(e);
+    console.log("Exiting server!");
+    process.exit();
+}

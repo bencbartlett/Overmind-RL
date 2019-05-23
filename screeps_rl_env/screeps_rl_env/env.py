@@ -4,6 +4,7 @@ import gym
 import numpy as np
 
 from screeps_rl_env.interface import ScreepsInterface
+from screeps_rl_env.utils import kill_backend_processes
 
 PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
 
@@ -17,9 +18,16 @@ def simple_reward(creep1xy, creep2xy):
 
 class ScreepsEnv(gym.Env):
 
-    def __init__(self, index = 0, use_backend = False):
-        self.index = index
-        self.interface = ScreepsInterface(index, use_backend = use_backend)
+    def __init__(self, env_config = None, index = None, use_backend = False):
+
+        print(env_config)
+
+        self.index = index if index is not None else env_config.worker_index
+
+        # kill_backend_processes(self.index)
+
+        print('starting interface with index {}'.format(self.index))
+        self.interface = ScreepsInterface(self.index, use_backend = use_backend)
 
         self.username = "Agent1"  # TODO: hardcoded for now
 
@@ -49,7 +57,7 @@ class ScreepsEnv(gym.Env):
         :param action: int, direction to move (1-8, inclusive)
         :return: JSON-formatted command to tell the creep to move
         """
-        return json.dumps({"a1c1": [["move", action]]})
+        return json.dumps({"a1c1": [["move", action + 1]]})
 
     # gym.Env methods ==================================================================================================
 
@@ -85,6 +93,7 @@ class ScreepsEnv(gym.Env):
         self.interface.send_action(command, self.username)
 
         self.interface.tick()
+
         state = self.interface.get_room_state()
 
         data = self._process_room_state(state)

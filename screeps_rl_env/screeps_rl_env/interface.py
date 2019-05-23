@@ -1,8 +1,7 @@
 import json
-from subprocess import Popen
-from time import time
-
 import os
+from subprocess import Popen
+
 import numpy as np
 import zerorpc
 
@@ -12,33 +11,35 @@ BACKEND_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), BACKEND_
 RL_ACTION_SEGMENT = 70
 
 
-
 class ScreepsInterface:
     """
     Represents an interface to communicate with the screeps-rl-backend module, which controls the screeps server
     environment. This can in turn be controlled by the ScreepsEnv gym environment.
     """
 
-    def __init__(self, index = 0, use_backend = False):
+    def __init__(self, index = 0, use_backend = False, reset_on_start = True):
 
         self.index = index
         self.gamePort = 21025 + 5 * index
         self.port = 22025 + 5 * index
 
         self._start_server()
+
         if use_backend:
             self._start_backend()
 
-        self.terrain_cache = {}
+        if reset_on_start:
+            self.reset()
 
     def _start_server(self):
 
-        print("Starting remote server at " + str(self.gamePort) + "...")
+        print("Starting remote server at " + str(self.port) + "...")
         self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
 
-        self.c = zerorpc.Client()
-        response = self.c.connect("tcp://127.0.0.1:" + str(self.port))
-        print(f"Connected; response: {response}")
+        connect_to = "tcp://127.0.0.1:" + str(self.port)
+        self.c = zerorpc.Client(connect_to = connect_to, timeout = 15, heartbeat = 3, passive_heartbeat = True)
+        # response = self.c.connect("tcp://127.0.0.1:" + str(self.port))
+        # print(f"Connected; response: {response}")
 
         # print("Starting processor")
         # self.c.startServer()
@@ -66,7 +67,7 @@ class ScreepsInterface:
     def tick(self):
         """Run for a tick"""
         # start = time()
-        self.c.tick()
+        return self.c.tick()
         # print(f"Time elapsed RPC: {time() - start}")
 
     def run(self, ticks = 100):
@@ -139,6 +140,9 @@ class ScreepsInterface:
 
         print("Exiting")
         self.c.exit()
+
+        print("Closing client")
+        self.c.close()
 
         print("Polling")
 

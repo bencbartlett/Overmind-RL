@@ -27,6 +27,7 @@ class ScreepsEnvironment {
             logdir: path.resolve(appDir, '../../servers', `server${this.index}`, 'logs'),
             assetsDir: path.resolve(appDir, '../../servers', `server${this.index}`, 'assets'),
             port: this.serverPort,
+            commsPort: this.commsPort,
             modfile: path.resolve(appDir, '../serverMockup/assets/mods.json')
         };
 

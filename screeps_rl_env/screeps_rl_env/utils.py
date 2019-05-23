@@ -1,12 +1,13 @@
 import psutil
 
-def kill_backend_processes(servers = (0, 1, 2), verbose = True):
+def kill_backend_processes(server_index, verbose = True):
     def on_terminate(proc):
         if verbose: print("Process {} terminated with exit code {}".format(proc, proc.returncode))
 
-    look_ports = []
-    for server in servers:
-        look_ports.extend([21025 + 5 * server + 0, 21025 + 5 * server + 1, 21025 + 5 * server + 2])
+    look_ports = [21025 + 5 * server_index + 0,
+                  21025 + 5 * server_index + 1,
+                  21025 + 5 * server_index + 2,
+                  22025 + 5 * server_index]
 
     kill_pids = []
     for conn in psutil.net_connections():
