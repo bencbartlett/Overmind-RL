@@ -20,7 +20,10 @@ class ScreepsEnv(gym.Env):
 
     def __init__(self, env_config = None, index = None, use_backend = False):
 
+        print("ENV_CONFIG:")
         print(env_config)
+
+        print("Worker index: ", env_config.worker_index)
 
         self.index = index if index is not None else env_config.worker_index
 
@@ -32,7 +35,7 @@ class ScreepsEnv(gym.Env):
         self.username = "Agent1"  # TODO: hardcoded for now
 
         # TODO: these are placeholder spaces. obs space is x,y of self and enemy, act space is movement in 8 directions
-        self.observation_space = gym.spaces.Discrete(4)
+        self.observation_space = gym.spaces.MultiDiscrete([50, 50, 50, 50])
         self.action_space = gym.spaces.Discrete(8)
 
     def _process_room_state(self, room_state):
@@ -47,7 +50,7 @@ class ScreepsEnv(gym.Env):
         my_creep = my_creeps[0] if len(my_creeps) > 0 else None
 
         if enemy_creep is not None and my_creep is not None:
-            return my_creep["x"], my_creep["y"], enemy_creep["x"], enemy_creep["y"]
+            return np.array([my_creep["x"], my_creep["y"], enemy_creep["x"], enemy_creep["y"]])
         else:
             return None
 
@@ -57,7 +60,7 @@ class ScreepsEnv(gym.Env):
         :param action: int, direction to move (1-8, inclusive)
         :return: JSON-formatted command to tell the creep to move
         """
-        return json.dumps({"a1c1": [["move", action + 1]]})
+        return json.dumps({"a1c1": [["move", int(action) + 1]]})
 
     # gym.Env methods ==================================================================================================
 

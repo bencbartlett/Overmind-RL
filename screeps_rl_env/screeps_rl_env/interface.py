@@ -17,7 +17,7 @@ class ScreepsInterface:
     environment. This can in turn be controlled by the ScreepsEnv gym environment.
     """
 
-    def __init__(self, index = 0, use_backend = False, reset_on_start = True):
+    def __init__(self, index, use_backend = False, reset_on_start = True):
 
         self.index = index
         self.gamePort = 21025 + 5 * index

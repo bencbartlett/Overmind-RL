@@ -77,6 +77,10 @@ class ScreepsServer extends EventEmitter {
 							  fs.copyFileAsync(path.join(ASSETS_PATH, DB_FILE), path.join(this.opts.path, DB_FILE)),
 							  fs.copyFileAsync(path.join(ASSETS_PATH, MOD_FILE), path.join(this.opts.path, MOD_FILE)),
 						  ]);
+
+		// fs.copy(path.join(ASSETS_PATH, DB_FILE), path.join(this.opts.path, DB_FILE));
+		// fs.copy(path.join(ASSETS_PATH, MOD_FILE), path.join(this.opts.path, MOD_FILE));
+
 		// Start storage process
 		this.emit('info', 'Starting storage process.');
 		const library = path.resolve(path.dirname(require.resolve('@screeps/storage')), '../bin/start.js');
