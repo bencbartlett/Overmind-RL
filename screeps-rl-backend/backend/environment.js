@@ -5,8 +5,8 @@ const {ScreepsServer, TerrainMatrix} = require('./serverMockup/src/main.js');
 
 const C = require('@screeps/driver').constants;
 
-const ROOM = 'W0N1';
-const RL_ACTION_SEGMENT = 70;
+const ROOM = 'E0S0'; // default room to use for single room
+const WORLD_WIDTH = 10; // max width of the world; must be even
 
 // const OVERMIND_PATH = "../../../Overmind/dist/main.js";
 
@@ -35,13 +35,102 @@ class ScreepsEnvironment {
 
         this.server = new ScreepsServer(opts);
 
+        this.agent1 = undefined;
+        this.agent2 = undefined;
+
+        // List of vector_index entries that correspond to new rooms
+        this.roomIndices = [];
     }
 
     /**
-     * Resets the server world
+     * Adds a room "environment" to the screeps world (used for vectorized
+     * Python environments)
      */
-    async resetWorld() {
-        await this.server.world.reset();
+    addEnv(index) {
+        // if (index === undefined) {
+        //     index = this.roomIndices.length;
+        // }
+        if (this.roomIndices.includes(index)) {
+            throw new Error(`Cannot add room environment with index ${index}! ` +
+                `this.env_indices = ${this.roomIndices}`);
+        } else if (this.server.started) {
+            throw new Error(`ScreepsEnvironment.addEnv() can only be called before starting server!`)
+        } else {
+            this.roomIndices.push(index);
+        }
+        return ScreepsEnvironment._roomFromIndex(index);
+    }
+
+    /**
+     * Lists the names of all rooms in the simulation
+     */
+    listRoomNames() {
+        return _.map(this.roomIndices, index => ScreepsEnvironment._roomFromIndex(index));
+    }
+
+    /**
+     * Gets a room name from an index. Rooms start at ROOM and are enumerated
+     * in checkerboard reading order, wrapping once E*-- reaches WORLD_WIDTH
+     */
+    static _roomFromIndex(index) {
+        let x = index % (WORLD_WIDTH / 2);
+        let y = Math.floor(index / (WORLD_WIDTH / 2));
+        if (y % 2 === 0) {
+            x = 2 * x
+        } else {
+            x = 2 * x + 1
+        }
+        return "E" + x.toString(10) + "S" + y.toString(10);
+    }
+
+    /**
+     * Inverse of _roomFromIndex(); gets an index given a room name
+     */
+    static _indexFromRoom(room) {
+        const coordinateRegex = /(E|W)(\d+)(N|S)(\d+)/g;
+        const match = coordinateRegex.exec(room);
+
+        const xDir = match[1];
+        const x = match[2];
+        const yDir = match[3];
+        const y = match[4];
+
+        return y * (WORLD_WIDTH / 2) + Math.floor(x / 2);
+    }
+
+    /**
+     * Terrain generation function
+     */
+    static generateTerrain() {
+        const terrain = new TerrainMatrix();
+        const walls = [[10, 10], [10, 40], [40, 10], [40, 40]];
+        _.each(walls, ([x, y]) => terrain.set(x, y, 'wall'));
+        return terrain;
+    }
+
+    /**
+     * Adds a room to the world. Must be called BEFORE starting server.
+     */
+    async addRoom(roomName, terrain = undefined) {
+        if (!terrain) {
+            terrain = ScreepsEnvironment.generateTerrain();
+        }
+        await this.server.world.addRoom(roomName);
+        await this.server.world.setTerrain(roomName, terrain);
+    }
+
+    /**
+     * Resets a specified room, deleting all creeps and spawning in new ones.
+     * Can be called while server is running.
+     */
+    async resetRoom(roomName) {
+        await this.deleteRoomCreeps(roomName);
+
+        let [x1, y1] = await this.server.world.getOpenPosition(roomName);
+        await this.createCreep(this.agent1, roomName, x1, y1);
+
+        let [x2, y2] = await this.server.world.getOpenPosition(roomName);
+        await this.createCreep(this.agent2, roomName, x2, y2);
     }
 
     /**
@@ -49,38 +138,29 @@ class ScreepsEnvironment {
      */
     async resetTrainingEnvironment() {
 
-        // Stop the server
-        // await this.stopServer();
+        console.log('\n----------RESETTING TRAINING ENVIRONMENT----------\n');
 
         // Clear the database
-        await this.resetWorld();
-
-        // Add a single room with specified terrain
-        // const terrain = this.getRoomTerrain(roomName);
-
-        // Prepare the terrain for a new room
-        const terrain = new TerrainMatrix();
-        const walls = [[10, 10], [10, 40], [40, 10], [40, 40]];
-        _.each(walls, ([x, y]) => terrain.set(x, y, 'wall'));
-
-        await this.server.world.addRoom(ROOM);
-        await this.server.world.setTerrain(ROOM, terrain);
+        await this.server.world.reset();
 
         // Add two players
         const agent1 = await this.addAgent('Agent1', "FF0000");
         const agent2 = await this.addAgent('Agent2', "0000FF");
 
-        // Add a creep to each
-        const body = [{type: 'attack', hits: 100, boost: undefined}, {type: 'move', hits: 100, boost: undefined}];
+        this.agent1 = agent1;
+        this.agent2 = agent2;
 
-        let [x1, y1] = await this.server.world.getOpenPosition(ROOM);
-        await this.createCreep(agent1.id, 'a1c1', body, x1, y1);
-
-        let [x2, y2] = await this.server.world.getOpenPosition(ROOM);
-        await this.createCreep(agent2.id, 'a2c1', body, x2, y2);
+        // Add and reset each room
+        if (this.roomIndices.length === 0) {
+            throw new Error(`No rooms have been requested! Use ScreepsEnvironment.addEnv() to add a room environment.`)
+        }
+        for (let index of this.roomIndices) {
+            const room = ScreepsEnvironment._roomFromIndex(index);
+            await this.addRoom(room);
+            await this.resetRoom(room);
+        }
 
         // Start the server
-
         await this.startServer();
 
     }
@@ -119,7 +199,31 @@ class ScreepsEnvironment {
         return bot;
     }
 
-    async createCreep(player, name, body, x, y) {
+    async generateCreepName(agent, roomName) {
+        const roomIndex = ScreepsEnvironment._indexFromRoom(roomName);
+        const creepsInRoom = await this.server.world.getRoomCreeps(roomName, agent.id);
+        const creepIndex = creepsInRoom.length;
+        return `${agent.username}_${roomIndex}_${creepIndex}`
+    }
+
+    static generateCreepBody() {
+        // Add a creep to each
+        const body = [
+            {type: 'rangedAttack', hits: 100, boost: undefined},
+            {type: 'move', hits: 100, boost: undefined}
+        ];
+        return body;
+    }
+
+    async createCreep(agent, room, x, y, name = undefined, body = undefined) {
+
+        if (!name) {
+            name = await this.generateCreepName(agent, room)
+        }
+        if (!body) {
+            body = ScreepsEnvironment.generateCreepBody();
+        }
+
         const energyCapacity = _.sumBy(body, part => part.type === 'carry' ? 50 : 0);
 
         const creep = {
@@ -130,8 +234,8 @@ class ScreepsEnvironment {
             energy: 0,
             energyCapacity: energyCapacity,
             type: 'creep',
-            room: ROOM,
-            user: player,
+            room: room,
+            user: agent.id,
             hits: body.length * 100,
             hitsMax: body.length * 100,
             spawning: false,
@@ -143,67 +247,31 @@ class ScreepsEnvironment {
 
     }
 
-    // async initializeServer() {
-    //
-    // 	// Initialize server
-    // 	await this.server.world.reset(); // reset world but add invaders and source keepers bots
-    //
-    // 	// Prepare the terrain for a new room
-    // 	const terrain = new TerrainMatrix();
-    // 	const walls = [[10, 10], [10, 40], [40, 10], [40, 40]];
-    // 	_.each(walls, ([x, y]) => terrain.set(x, y, 'wall'));
-    //
-    // 	// Create a new room with terrain and basic objects
-    // 	await this.server.world.addRoom(ROOM);
-    // 	await this.server.world.setTerrain(ROOM, terrain);
-    // 	await this.server.world.addRoomObject(ROOM, 'controller', 10, 10, {level: 0});
-    // 	await this.server.world.addRoomObject(ROOM, 'source', 10, 40, {
-    // 		energy: 1000,
-    // 		energyCapacity: 1000,
-    // 		ticksToRegeneration: 300
-    // 	});
-    // 	await this.server.world.addRoomObject(ROOM, 'mineral', 40, 40, {
-    // 		mineralType: 'H',
-    // 		density: 3,
-    // 		mineralAmount: 3000
-    // 	});
-    //
-    // 	// Add a bot in W0N1
-    // 	// const overmindPath = path.resolve(__dirname, '../bots/overmind.js');
-    // 	// const script = fs.readFileSync(overmindPath, 'utf8');
-    //
-    // 	const _script = `module.exports.loop = function() {
-    // 	        console.log('Tick!',Game.time);
-    // 	        const directions = [TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT, TOP_LEFT];
-    // 	        _.sample(Game.spawns).createCreep([MOVE]);
-    // 	        _.each(Game.creeps, c => c.move(_.sample(directions)));
-    // 	    };`;
-    //
-    // 	// console.log(script);
-    // 	const modules = {
-    // 		main: _script,
-    // 	};
-    // 	const bot = await this.server.world.addBot({username: 'bot', room: ROOM, x: 25, y: 25, modules});
-    //
-    // 	// Print console logs every tick
-    // 	bot.on('console', (logs, results, userid, username) => {
-    // 		_.each(logs, line => console.log(`[console|${username}]`, line));
-    // 	});
-    //
-    // }
-
     // Data retrieval methods ==================================================
 
     /**
      * Returns the terrain for a room, serialized to a 2500-char string by
      * default
      */
-    async getRoomTerrain(roomName = ROOM, serialized = true) {
+    async getRoomTerrain(roomName, serialized = true) {
         const terrain = await this.server.world.getTerrain(roomName);
         if (serialized) {
             return terrain.serialize();
         } else {
             return terrain;
+        }
+    }
+
+    /**
+     * Returns the terrain for a room, serialized to a 2500-char string by
+     * default
+     */
+    async getAllRoomTerrain(serialized = true) {
+        const allTerrain = await this.server.world.getAllTerrain();
+        if (serialized) {
+            return _.mapValues(allTerrain, terrain => terrain.serialize());
+        } else {
+            return allTerrain;
         }
     }
 
@@ -247,8 +315,34 @@ class ScreepsEnvironment {
         return await this.server.world.getRoomObjects(roomName);
     }
 
+    /**
+     * Returns an object containing room objects for each room indexed by room name
+     */
+    async getAllRoomObjects() {
+        const allRoomObjects = await this.server.world.getAllRoomObjects();
+        return _.groupBy(allRoomObjects, roomObject => roomObject.room);
+    }
+
+    /**
+     * Delete all roomObjects within a room
+     */
+    async deleteRoomObjects(roomName) {
+        return await this.server.world.deleteRoomObjects(roomName);
+    }
+
+    /**
+     * Delete all creeps within a room
+     */
+    async deleteRoomCreeps(roomName) {
+        return await this.server.world.deleteRoomCreeps(roomName);
+    }
+
     async getEventLog(roomName = ROOM) {
         return await this.server.world.getEventLog(roomName);
+    }
+
+    async getAllEventLogs() {
+        return await this.server.world.getAllEventLogs();
     }
 
     async startBackend() {

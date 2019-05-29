@@ -105,6 +105,24 @@ class World {
 	}
 
 	/**
+	 * Return room terrain data (walls, plains and swamps)
+	 * Return a TerrainMatrix instance
+	 */
+	async getAllTerrain() {
+		const {db} = this.server.common.storage;
+		// Load data
+		const data = await db['rooms.terrain'].find();
+
+		// Parse and return terrain data as a TerrainMatrix
+		let allTerrain = {};
+		for (let roomData of data) {
+			const serial = _.get(roomData, 'terrain');
+			allTerrain[roomData.room] = TerrainMatrix.unserialize(serial);
+		}
+		return allTerrain;
+	}
+
+	/**
 	 * Define room terrain data (walls, plains and swamps)
 	 * @terrain must be an instance of TerrainMatrix.
 	 */
@@ -142,18 +160,60 @@ class World {
 	}
 
 	/**
+	 * Delete all roomObjects within a room
+	 */
+	async deleteRoomObjects(roomName) {
+		const {db} = await this.load();
+		return await db['rooms.objects'].removeWhere({room: roomName});
+	}
+
+	/**
+	 * Delete all creeps within a room
+	 */
+	async deleteRoomCreeps(roomName) {
+		const {db} = await this.load();
+		return await db['rooms.objects'].removeWhere({room: roomName, type: 'creep'});
+	}
+
+	/**
 	 * Get the roomObjects list for requested roomName
 	 */
 	async getRoomObjects(roomName) {
 		const {db} = await this.load();
-		return db['rooms.objects'].find({room: roomName});
+		return await db['rooms.objects'].find({room: roomName});
 	}
 
+	/**
+	 * Get the roomObjects list all rooms
+	 */
+	async getAllRoomObjects() {
+		const {db} = await this.load();
+		return await db['rooms.objects'].find();
+	}
+
+	/**
+	 * Get a list of creeps in the requested roomName
+	 */
+	async getRoomCreeps(roomName, playerID=undefined) {
+		const {db} = await this.load();
+		if (playerID) {
+			return await db['rooms.objects'].find({room: roomName, type: 'creep', user: playerID});
+		} else {
+			return await db['rooms.objects'].find({room: roomName, type: 'creep'});
+		}
+	}
+
+	/**
+     * Gets an event log for a specified room
+     */
 	async getEventLog(roomName) {
 		const {env} = await this.load();
 		return await env.hget(env.keys.ROOM_EVENT_LOG, roomName);
 	}
 
+	/**
+     * Gets event logs for all rooms; returns an object indexed by room name
+     */
 	async getAllEventLogs() {
 		const {env} = await this.load();
 		return await env.get(env.keys.ROOM_EVENT_LOG);

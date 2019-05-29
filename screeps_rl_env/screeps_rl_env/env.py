@@ -4,7 +4,6 @@ import gym
 import numpy as np
 
 from screeps_rl_env.interface import ScreepsInterface
-from screeps_rl_env.utils import kill_backend_processes
 
 PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
 
@@ -18,27 +17,37 @@ def simple_reward(creep1xy, creep2xy):
 
 class ScreepsEnv(gym.Env):
 
-    def __init__(self, env_config = None, index = None, use_backend = False):
+    def __init__(self,
+                 env_config = None,
+                 worker_index = None,
+                 vector_index = None,
+                 interface = None,
+                 use_backend = False):
 
         print("ENV_CONFIG:")
         print(env_config)
 
-        print("Worker index: ", env_config.worker_index)
+        print(f"worker_index: {env_config.worker_index}, vector_index: {env_config.vector_index}")
 
-        self.index = index if index is not None else env_config.worker_index
-
-        # kill_backend_processes(self.index)
-
-        print('starting interface with index {}'.format(self.index))
-        self.interface = ScreepsInterface(self.index, use_backend = use_backend)
+        self.worker_index = worker_index if worker_index is not None else env_config.worker_index
+        self.vector_index = vector_index if vector_index is not None else env_config.vector_index
 
         self.username = "Agent1"  # TODO: hardcoded for now
+
+        if interface is None:
+            print('starting interface with worker index {}'.format(self.worker_index))
+            self.interface = ScreepsInterface(self.worker_index, use_backend = use_backend)
+        else:
+            self.interface = interface
+
+        # Request a new mini-environment from the screeps interface. Returns a reference to the environment's room name
+        self.room = self.interface.add_env(self.vector_index)
 
         # TODO: these are placeholder spaces. obs space is x,y of self and enemy, act space is movement in 8 directions
         self.observation_space = gym.spaces.MultiDiscrete([50, 50, 50, 50])
         self.action_space = gym.spaces.Discrete(8)
 
-    def _process_room_state(self, room_state):
+    def process_state(self, room_state):
         terrain = room_state["terrain"]
         room_objects = room_state["roomObjects"]
         event_log = room_state["eventLog"]
@@ -54,7 +63,7 @@ class ScreepsEnv(gym.Env):
         else:
             return None
 
-    def _process_action(self, action):
+    def process_action(self, action):
         """
         Placeholder function for processing an action
         :param action: int, direction to move (1-8, inclusive)
@@ -92,14 +101,14 @@ class ScreepsEnv(gym.Env):
                  However, official evaluations of your agent are not allowed to
                  use this for learning.
         """
-        command = self._process_action(action)
+        command = self.process_action(action)
         self.interface.send_action(command, self.username)
 
         self.interface.tick()
 
-        state = self.interface.get_room_state()
+        state = self.interface.get_room_state(self.room)
 
-        data = self._process_room_state(state)
+        data = self.process_state(state)
 
         if data is None:
             return data, 0, True, {}
@@ -111,8 +120,12 @@ class ScreepsEnv(gym.Env):
         """Reset the server environment"""
         self.interface.reset()
         self.interface.tick()
-        state = self.interface.get_room_state()
-        return self._process_room_state(state)
+        state = self.interface.get_room_state(self.room)
+        return self.process_state(state)
+
+    def reset_soft(self):
+        self.interface.reset_room(self.room)
+
 
     def render(self, mode = 'human'):
         print("Run the environment with use_backend=True to connect the Screeps client")

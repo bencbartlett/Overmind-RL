@@ -5,7 +5,7 @@ from subprocess import Popen
 import numpy as np
 import zerorpc
 
-ROOM = "W0N1"  # default room
+ROOM = "E0S0"  # default room
 BACKEND_RELATIVE_PATH = "../../screeps-rl-backend/backend/server.js"
 BACKEND_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), BACKEND_RELATIVE_PATH)
 RL_ACTION_SEGMENT = 70
@@ -17,39 +17,34 @@ class ScreepsInterface:
     environment. This can in turn be controlled by the ScreepsEnv gym environment.
     """
 
-    def __init__(self, index, use_backend = False, reset_on_start = True):
+    def __init__(self, worker_index, use_backend = False, reset_on_start = True):
 
-        self.index = index
-        self.gamePort = 21025 + 5 * index
-        self.port = 22025 + 5 * index
-
-        self._start_server()
-
-        if use_backend:
-            self._start_backend()
-
-        if reset_on_start:
-            self.reset()
-
-    def _start_server(self):
+        self.index = worker_index
+        self.gamePort = 21025 + 5 * worker_index
+        self.port = 22025 + 5 * worker_index
 
         print("Starting remote server at " + str(self.port) + "...")
         self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
 
-        connect_to = "tcp://127.0.0.1:" + str(self.port)
-        self.c = zerorpc.Client(connect_to = connect_to, timeout = 15, heartbeat = 3, passive_heartbeat = True)
-        # response = self.c.connect("tcp://127.0.0.1:" + str(self.port))
-        # print(f"Connected; response: {response}")
+        self.c = zerorpc.Client(connect_to = "tcp://127.0.0.1:" + str(self.port),
+                                timeout = 15,
+                                heartbeat = 3,
+                                passive_heartbeat = True)
 
-        # print("Starting processor")
-        # self.c.startServer()
+        self.all_rooms = []
 
-    # def _start_processor(self):
-    #     """Start the server procesor"""
-    #     print("Starting processor")
-    #     self.c.startServer()
+        if use_backend:
+            self.start_backend()
 
-    def _start_backend(self):
+        if reset_on_start:
+            self.reset()
+
+    def add_env(self, vector_index):
+        room_name = self.c.addEnv(vector_index)
+        self.all_rooms.append(room_name)
+        return room_name
+
+    def start_backend(self):
         """Start the backend, necessary if you want to view the world with the Screeps client"""
         print("Starting backend")
         self.c.startBackend()
@@ -62,7 +57,9 @@ class ScreepsInterface:
         # Clear caches
         self.terrain_cache = {}
 
-        # self._start_processor()
+    def reset_room(self, room):
+        del self.terrain_cache[room]
+        self.c.resetRoom(room)
 
     def tick(self):
         """Run for a tick"""
@@ -75,7 +72,10 @@ class ScreepsInterface:
         for tick in range(ticks):
             self.tick()
 
-    def _get_room_terrian(self, room = ROOM):
+    def _get_all_room_names(self):
+        return self.c.listRoomNames()
+
+    def _get_room_terrian(self, room):
         """
         Get the terrian of the room and return as a 50x50 numpy array
         :param room: the room name to fetch
@@ -90,6 +90,17 @@ class ScreepsInterface:
             self.terrain_cache[room] = terrain
             return terrain
 
+    def _get_all_room_terrian(self):
+        """
+        Get the terrian of all rooms and return as an object
+        :param room: the room name to fetch
+        :return: np.ndarray the terrain matrix of the room
+        """
+        all_terrain = {}
+        for room in self.all_rooms:
+            all_terrain[room] = self._get_room_terrian(room)
+        return all_terrain
+
     def _get_room_objects(self, room = ROOM):
         """
         Get a list of all room objects in the room. Each object is a JSON-style dictionary
@@ -97,6 +108,14 @@ class ScreepsInterface:
         :return: list of dictionaries representing each room object
         """
         return self.c.getRoomObjects(room)
+
+    def _get_all_room_objects(self):
+        """
+        Get a list of all room objects in every room. Returns object indexed by room name
+        :param room: the room name to fetch
+        :return: list of dictionaries representing each room object
+        """
+        return self.c.getAllRoomObjects()
 
     def _get_room_event_log(self, room = ROOM):
         """
@@ -106,7 +125,15 @@ class ScreepsInterface:
         """
         return self.c.getEventLog(room)
 
-    def get_room_state(self, room = ROOM):
+    def _get_all_room_event_logs(self):
+        """
+        Gets the event logs for every room in the simulation, indexed by room name
+        :param room: the room name to fetch
+        :return: Room.eventLog as a list
+        """
+        return self.c.getAllEventLogs()
+
+    def get_room_state(self, room):
         """
         Get the full state of the room, returning terrain, room objects, and event log
         :return: dictionary of terrain, roomObjects, eventLog
@@ -117,6 +144,30 @@ class ScreepsInterface:
             "eventLog"   : self._get_room_event_log(room)
         }
 
+    def get_all_room_states(self):
+        """
+        Get the full state of all rooms room, returning terrain, room objects, and event log
+        :return: dictionary of terrain, roomObjects, eventLog
+        """
+        terrain = self._get_all_room_terrian()
+        room_objects = self._get_all_room_objects()
+        event_logs = self._get_all_room_event_logs()
+
+        return {
+            room: {
+                "terrain"    : terrain[room],
+                "roomObjects": room_objects[room],
+                "eventLog"   : event_logs[room]
+            } for room in self.all_rooms
+        }
+
+    def send_action(self, actions, username):
+        """
+        Writes the serialized action to the user memory
+        :param actions: a dictionary of {creepName: [list of actions and arguments] }
+        """
+        self.c.sendCommands(username, actions)
+
     def send_all_actions(self, all_actions):
         """
         Writes the serialized actions to the user memory
@@ -125,13 +176,6 @@ class ScreepsInterface:
         for username, user_actions in all_actions.items():
             # self.c.setMemorySegment(username, RL_ACTION_SEGMENT, user_actions)
             self.c.sendCommands(username, user_actions)
-
-    def send_action(self, actions, username):
-        """
-        Writes the serialized action to the user memory
-        :param actions: a dictionary of {creepName: [list of actions and arguments] }
-        """
-        self.c.sendCommands(username, actions)
 
     def close(self):
         """Close child processes"""

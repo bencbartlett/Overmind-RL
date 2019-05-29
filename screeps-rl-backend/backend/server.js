@@ -11,7 +11,8 @@ const index = parseInt(process.argv[2], 10) || 0; // index of server
 const env = new ScreepsEnvironment(index);
 
 const methods = [
-    env.resetWorld,
+    env.addEnv,
+    env.listRoomNames,
     env.resetTrainingEnvironment,
     env.startBackend,
     env.startServer,
@@ -19,10 +20,9 @@ const methods = [
     env.tick,
     env.getRoomTerrain,
     env.getRoomObjects,
+    env.getAllRoomObjects,
     env.getEventLog,
     env.sendCommands,
-    env.setMemory,
-    env.setMemorySegment,
     // env.exit
 ];
 
