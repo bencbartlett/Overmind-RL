@@ -5,11 +5,16 @@ from subprocess import Popen
 import numpy as np
 import zerorpc
 
+import atexit
+
 ROOM = "E0S0"  # default room
 BACKEND_RELATIVE_PATH = "../../screeps-rl-backend/backend/server.js"
 BACKEND_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), BACKEND_RELATIVE_PATH)
 RL_ACTION_SEGMENT = 70
 
+def terminate_server_process(proc):
+    print("Terminating Screeps server process with pid {}".format(proc.pid))
+    proc.terminate()
 
 class ScreepsInterface:
     """
@@ -17,14 +22,16 @@ class ScreepsInterface:
     environment. This can in turn be controlled by the ScreepsEnv gym environment.
     """
 
-    def __init__(self, worker_index, use_backend = False, reset_on_start = True):
+    def __init__(self, worker_index, use_backend = False):
 
         self.index = worker_index
         self.gamePort = 21025 + 5 * worker_index
         self.port = 22025 + 5 * worker_index
 
+        #
         print("Starting remote server at " + str(self.port) + "...")
         self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
+        atexit.register(terminate_server_process, self.server_process)
 
         self.c = zerorpc.Client(connect_to = "tcp://127.0.0.1:" + str(self.port),
                                 timeout = 15,
@@ -36,11 +43,10 @@ class ScreepsInterface:
         if use_backend:
             self.start_backend()
 
-        if reset_on_start:
-            self.reset()
-
     def add_env(self, vector_index):
+        print("Adding environment with vector_index {}...".format(vector_index))
         room_name = self.c.addEnv(vector_index)
+        print("Environment with vector_index {} added to room {}".format(vector_index, room_name))
         self.all_rooms.append(room_name)
         return room_name
 
@@ -166,6 +172,7 @@ class ScreepsInterface:
         Writes the serialized action to the user memory
         :param actions: a dictionary of {creepName: [list of actions and arguments] }
         """
+        actions = json.dumps(actions)
         self.c.sendCommands(username, actions)
 
     def send_all_actions(self, all_actions):
@@ -175,7 +182,7 @@ class ScreepsInterface:
         """
         for username, user_actions in all_actions.items():
             # self.c.setMemorySegment(username, RL_ACTION_SEGMENT, user_actions)
-            self.c.sendCommands(username, user_actions)
+            self.c.sendCommands(username, json.dumps(user_actions))
 
     def close(self):
         """Close child processes"""
@@ -192,20 +199,5 @@ class ScreepsInterface:
 
         print("Response: " + str(self.server_process.poll()))
 
-        self.server_process.kill()
+        self.server_process.terminate()
 
-
-if __name__ == "__main__":
-    env = ScreepsInterface(0)
-    env.reset()
-    for tick in range(20):
-        actions = {"Agent1": json.dumps({"a1c1": [["move", tick % 8 + 1]]}),
-                   "Agent2": json.dumps({"a2c1": [["move", tick % 8 + 1]]})}
-        env.send_all_actions(actions)
-        ret = env.tick()
-        state = env.get_room_state()
-        objects = state["roomObjects"]
-        [print(obj["name"], obj["x"], obj["y"]) for obj in objects]
-        # print(f"Response: {ret}")
-    # env.run(100)
-    env.close()

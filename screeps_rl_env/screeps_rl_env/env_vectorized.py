@@ -1,30 +1,32 @@
-import json
-
-import gym
-import numpy as np
 from ray.rllib import VectorEnv
 
 from screeps_rl_env.env import ScreepsEnv
 from screeps_rl_env.interface import ScreepsInterface
 
+from pprint import pprint
+
 
 class ScreepsVectorEnv(VectorEnv):
 
     def __init__(self,
-                 env_config,
-                 num_envs = 10,
+                 env_config = None,
+                 num_envs = 2,
                  worker_index = None,
                  use_backend = False):
 
         print("ENV_CONFIG:")
         print(env_config)
 
-        print(f"worker_index: {env_config.worker_index}, vector_index: {env_config.vector_index}")
+        # print(f"num_envs_per_worker: {env_config.num_envs_per_worker}")
+
+        # print(f"worker_index: {env_config.worker_index}, vector_index: {env_config.vector_index}")
 
         self.worker_index = worker_index if worker_index is not None else env_config.worker_index
 
         print('Starting interface with worker index {}'.format(self.worker_index))
-        self.interface = ScreepsInterface(self.worker_index, use_backend = use_backend, reset_on_start = False)
+        self.interface = ScreepsInterface(self.worker_index, use_backend = use_backend)
+
+        self.num_envs = num_envs
 
         self.envs = []
         for vector_index in range(num_envs):
@@ -43,10 +45,11 @@ class ScreepsVectorEnv(VectorEnv):
         Returns:
             obs (list): Vector of observations from each environment.
         """
+        print("-----VECTOR RESET-----")
         self.interface.reset()
         self.interface.tick()
         states_all = self.interface.get_all_room_states()
-        return [env.process_state(states_all[env.vector_index]) for env in self.envs]
+        return [env.process_state(states_all[env.room]) for env in self.envs]
 
     def reset_at(self, index):
         """Resets a single environment.
@@ -54,6 +57,7 @@ class ScreepsVectorEnv(VectorEnv):
         Returns:
             obs (obj): Observations from the resetted environment.
         """
+        print("-----Resetting environment at index {}-----".format(index))
         room = self.envs[index].room
         self.interface.reset_room(room)
         state = self.interface.get_room_state(room)
@@ -72,7 +76,41 @@ class ScreepsVectorEnv(VectorEnv):
             infos (list): Info values for each env.
         """
 
-        raise NotImplementedError
+        # build a dictionary of {username: {creepName: [list of actions and arguments] } }
+        all_actions = {}
+        for env, action in zip(self.envs, actions):
+            if all_actions.get(env.username) is None:
+                all_actions[env.username] = {}
+            all_actions[env.username].update(env.process_action(action))
+
+        # send actions to screeps environment
+        self.interface.send_all_actions(all_actions)
+
+        # run the tick
+        self.interface.tick()
+
+        # retrieve and process room states
+        all_states = self.interface.get_all_room_states()
+
+        obs = []
+        rewards = []
+        dones = []
+        infos = []
+        for env in self.envs:
+            ob = env.process_state(all_states[env.room])
+            reward = env.process_reward(ob)
+            done = True if ob is None else False
+            info = {}
+            obs.append(ob)
+            rewards.append(reward)
+            dones.append(done)
+            infos.append(info)
+
+        return obs, rewards, dones, infos
+
+    def get_unwrapped(self):
+        """Returns the underlying env instances."""
+        return self.envs
 
     def close(self):
         """Close child processes"""
