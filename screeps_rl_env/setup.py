@@ -17,7 +17,7 @@ setuptools.setup(
         "numpy",
         "scipy",
         "torch",
-        "tensorflow"
+        "tensorflow",
         "gym",
         "ray",
         "tqdm",

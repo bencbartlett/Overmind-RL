@@ -35,8 +35,9 @@ if __name__ == "__main__":
     LOCAL_HOST_NAME = "tau"
     if gethostname() != LOCAL_HOST_NAME:
         # Running on a cluster
-        print("Running on cluster")
         ray.init(redis_address = "localhost:6379")
+        print("---Running on cluster---")
+        print("Cluster resources:", ray.cluster_resources())
     else:
         # Running on local machine
         print("Running locally")
@@ -44,7 +45,7 @@ if __name__ == "__main__":
 
     # ModelCatalog.register_custom_model("my_model", CustomModel)
     tune.run(
-            "PPO",
+            "IMPALA",
             stop = {
                 "timesteps_total": 1e4,
             },
