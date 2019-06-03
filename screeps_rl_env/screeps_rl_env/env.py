@@ -35,14 +35,16 @@ class ScreepsEnv(gym.Env):
         if interface is None:
             print('starting interface with worker index {}'.format(self.worker_index))
             self.interface = ScreepsInterface(self.worker_index, use_backend = use_backend)
+            self.uses_external_interface = False
         else:
             self.interface = interface
+            self.uses_external_interface = True
 
         # Request a new mini-environment from the screeps interface. Returns a reference to the environment's room name
         self.room = self.interface.add_env(self.vector_index)
 
         # Reset if running in non-vector mode (allow vector env to reset if interface is specified)
-        if interface is None:
+        if not self.uses_external_interface:
             self.interface.reset()
 
         # TODO: these are placeholder spaces. obs space is x,y of self and enemy, act space is movement in 8 directions
@@ -68,7 +70,7 @@ class ScreepsEnv(gym.Env):
         if enemy_creep is not None and my_creep is not None:
             return np.array([my_creep["x"], my_creep["y"], enemy_creep["x"], enemy_creep["y"]])
         else:
-            return np.array([25, 25, 25, 25]) # TODO: placeholder
+            return None  # TODO: placeholder
 
     def process_action(self, action):
         """
@@ -125,11 +127,16 @@ class ScreepsEnv(gym.Env):
 
         state = self.interface.get_room_state(self.room)
 
+        return self.process_observation(state)
+
+    def process_observation(self, state):
+        """Returns the observation from a room given the state after running self.interface.tick()"""
         ob = self.process_state(state)
 
         if ob is not None:
             return ob, self.process_reward(ob), False, {}
         else:
+            ob = np.array([25, 25, 25, 25])
             return ob, 0, True, {}
 
     def reset(self):
@@ -150,4 +157,5 @@ class ScreepsEnv(gym.Env):
 
     def close(self):
         """Close child processes"""
-        self.interface.close()
+        if not self.uses_external_interface:
+            self.interface.close()

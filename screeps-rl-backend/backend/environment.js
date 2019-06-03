@@ -51,8 +51,8 @@ class ScreepsEnvironment {
         //     index = this.roomIndices.length;
         // }
         if (this.roomIndices.includes(index)) {
-            throw new Error(`Cannot add room environment with index ${index}! ` +
-                `this.roomIndices = ${this.roomIndices}`);
+            throw new Error(`Cannot add room environment with vector_index ${index}! `+
+                `this.index = ${this.index}; this.roomIndices = ${this.roomIndices}`);
         } else if (this.server.started) {
             throw new Error(`ScreepsEnvironment.addEnv() can only be called before starting server!`)
         } else {

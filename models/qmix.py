@@ -29,20 +29,20 @@ from screeps_rl_env import ScreepsEnv, ScreepsVectorEnv
 if __name__ == "__main__":
 
     register_env("screeps", lambda config: ScreepsEnv(config))
-    register_env("screeps_vectorized", lambda config: ScreepsVectorEnv(config))
+    register_env("screeps_vectorized", lambda config: ScreepsVectorEnv(config, num_envs = 20))
 
     ray.init()
 
     # ModelCatalog.register_custom_model("my_model", CustomModel)
     tune.run(
-            "DQN",
+            "PPO",
             stop = {
-                "timesteps_total": 1000,
+                "timesteps_total": 1e6,
             },
             config = {
                 "env"        : "screeps_vectorized", # "screeps",  # or "corridor" if registered above
                 "lr"         : 1e-3, #grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
-                "num_workers": 0,  # parallelism
+                "num_workers": 7,  # parallelism
                 # "num_envs_per_worker": 10,
                 "env_config" : {
                     "use_backend": False,

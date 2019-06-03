@@ -31,6 +31,12 @@ async function run() {
 
     console.log("All roomObjects:", await env.getAllRoomObjects());
     console.log(await env.tick());
+    console.log(await env.tick());
+    console.log(await env.tick());
+
+    console.log("All roomObjects:", await env.getAllRoomObjects());
+    console.log(await env.tick());
+
 
     console.log("All eventLogs:", await env.getAllEventLogs());
     console.log(await env.tick());

@@ -3,14 +3,12 @@ from ray.rllib import VectorEnv
 from screeps_rl_env.env import ScreepsEnv
 from screeps_rl_env.interface import ScreepsInterface
 
-from pprint import pprint
-
 
 class ScreepsVectorEnv(VectorEnv):
 
     def __init__(self,
                  env_config = None,
-                 num_envs = 2,
+                 num_envs = 10,
                  worker_index = None,
                  use_backend = False):
 
@@ -97,10 +95,7 @@ class ScreepsVectorEnv(VectorEnv):
         dones = []
         infos = []
         for env in self.envs:
-            ob = env.process_state(all_states[env.room])
-            reward = env.process_reward(ob)
-            done = True if ob is None else False
-            info = {}
+            ob, reward, done, info = env.process_observation(all_states[env.room])
             obs.append(ob)
             rewards.append(reward)
             dones.append(done)
