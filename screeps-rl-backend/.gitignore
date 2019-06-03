@@ -6,8 +6,7 @@ server
 .nyc_output
 
 # Screeps Config
-screeps.json
-**/config.json
+# **/config.json
 
 # Ignore basic folders
 /dist
@@ -23,9 +22,6 @@ screeps.json
 
 # npm lock file (v5.0.0+)
 /package-lock.json
-
-# Screeps config file
-/config.json
 
 # Numerous always-ignore extensions
 *.diff

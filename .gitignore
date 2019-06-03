@@ -1,3 +1,8 @@
+# Things with sensitive keys
+/models/cluster-test.yaml
+/models/cluster.yaml
+/models/screeps-rl-credentials.json
+
 # Output folders
 server
 /screeps-rl-backend/bots/overmind.js
@@ -7,7 +12,7 @@ server
 
 # Screeps Config
 screeps.json
-**/config.json
+# **/config.json
 
 # Ignore basic folders
 /dist
@@ -24,9 +29,6 @@ screeps.json
 
 # npm lock file (v5.0.0+)
 /package-lock.json
-
-# Screeps config file
-/config.json
 
 # Numerous always-ignore extensions
 *.diff

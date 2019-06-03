@@ -1,8 +1,5 @@
 import setuptools
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
-
 setuptools.setup(
     name="Overmind-RL",
     version="0.0.0",
@@ -10,8 +7,6 @@ setuptools.setup(
     author_email="benbartlett@stanford.edu",
     description="Reinforcement learning for Overmind, the autonomous Screeps AI",
     license="MIT",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
     url="https://github.com/bencbartlett/Overmind-RL",
     packages=setuptools.find_packages(),
     classifiers=(
@@ -22,11 +17,13 @@ setuptools.setup(
         "numpy",
         "scipy",
         "torch",
+        "tensorflow"
         "gym",
         "ray",
         "tqdm",
         "zerorpc",
         "opencv-python-headless",
-        "lz4"
+        "lz4",
+        "setproctitle"
     ],
 )
