@@ -53,10 +53,11 @@ if __name__ == "__main__":
                 "env"        : "screeps_vectorized",  # "screeps",  # or "corridor" if registered above
                 "lr"         : 1e-3,  # grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
                 "num_gpus"   : 0,
-                "num_workers": 2,  # parallelism
+                "num_workers": 8,  # parallelism
                 # "num_envs_per_worker": 10,
                 "env_config" : {
                     "use_backend": False,
                 },
             },
+            queue_trials = True
     )

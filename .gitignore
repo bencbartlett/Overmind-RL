@@ -5,7 +5,6 @@
 
 # Output folders
 server
-/screeps-rl-backend/bots/overmind.js
 /servers/server*
 *.log
 .nyc_output
