@@ -1,5 +1,5 @@
 # Things with sensitive keys
-/models/cluster-test.yaml
+/models/cluster-single-machine.yaml
 /models/cluster.yaml
 /models/screeps-rl-credentials.json
 

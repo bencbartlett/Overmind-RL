@@ -168,6 +168,10 @@ class ScreepsEnvironment {
     async addAgent(username, badgeColor = undefined) {
 
         const overmindPath = path.resolve(__dirname, '../bots/overmind.js');
+
+        // TODO: can build Overmind from source
+        // const overmindPath = path.resolve(__dirname, '../../../Overmind/dist/main.js');
+
         const script = fs.readFileSync(overmindPath, 'utf8');
 
         const _script = `module.exports.loop = function() {
@@ -215,7 +219,7 @@ class ScreepsEnvironment {
         return body;
     }
 
-    async createCreep(agent, room, x, y, name = undefined, body = undefined) {
+    async createCreep(agent, room, x, y, name = undefined, body = undefined, lifetime=100) {
 
         if (!name) {
             name = await this.generateCreepName(agent, room)
@@ -226,11 +230,13 @@ class ScreepsEnvironment {
 
         const energyCapacity = _.sumBy(body, part => part.type === 'carry' ? 50 : 0);
 
+        const gameTime = await this.server.world.gameTime;
+
         const creep = {
             name: name,
             x: x,
             y: y,
-            body,
+            body: body,
             energy: 0,
             energyCapacity: energyCapacity,
             type: 'creep',
@@ -240,6 +246,7 @@ class ScreepsEnvironment {
             hitsMax: body.length * 100,
             spawning: false,
             fatigue: 0,
+            ageTime: lifetime + gameTime,
             notifyWhenAttacked: true
         };
 
@@ -311,7 +318,7 @@ class ScreepsEnvironment {
     /**
      * Returns a list of room objects for a room
      */
-    async getRoomObjects(roomName = ROOM) {
+    async getRoomObjects(roomName) {
         return await this.server.world.getRoomObjects(roomName);
     }
 
@@ -337,7 +344,7 @@ class ScreepsEnvironment {
         return await this.server.world.deleteRoomCreeps(roomName);
     }
 
-    async getEventLog(roomName = ROOM) {
+    async getEventLog(roomName) {
         return await this.server.world.getEventLog(roomName);
     }
 

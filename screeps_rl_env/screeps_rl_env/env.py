@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import ray
 
 from screeps_rl_env.interface import ScreepsInterface
 
@@ -11,7 +12,6 @@ def simple_reward(creep1xy, creep2xy):
     x1, y1 = creep1xy
     x2, y2 = creep2xy
     return 50 - np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
 
 class ScreepsEnv(gym.Env):
 

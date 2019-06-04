@@ -24,18 +24,20 @@ async function run() {
 
     console.log(await env.tick());
 
-    console.log("Terrain:", env.getAll);
-
     // console.log(await env.server.world.getRoomCreeps("E0S0"));
     console.log(await env.tick());
 
     console.log("All roomObjects:", await env.getAllRoomObjects());
-    console.log(await env.tick());
-    console.log(await env.tick());
-    console.log(await env.tick());
+
+    for (let tick in _.range(10)) {
+        console.log(await env.tick());
+        console.log("All roomObjects:", await env.getAllRoomObjects());
+    }
+
 
     console.log("All roomObjects:", await env.getAllRoomObjects());
     console.log(await env.tick());
+    console.log("All roomObjects:", await env.getAllRoomObjects());
 
 
     console.log("All eventLogs:", await env.getAllEventLogs());
