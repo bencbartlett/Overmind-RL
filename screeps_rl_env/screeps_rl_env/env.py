@@ -1,6 +1,7 @@
 import gym
 import numpy as np
-import ray
+import matplotlib.pyplot as plt
+from gym.envs.classic_control.rendering import SimpleImageViewer
 
 from screeps_rl_env.interface import ScreepsInterface
 
@@ -13,6 +14,7 @@ def simple_reward(creep1xy, creep2xy):
     x2, y2 = creep2xy
     return 50 - np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
+
 class ScreepsEnv(gym.Env):
 
     def __init__(self,
@@ -20,7 +22,8 @@ class ScreepsEnv(gym.Env):
                  worker_index = None,
                  vector_index = None,
                  interface = None,
-                 use_backend = False):
+                 use_backend = False,
+                 use_viewer = False):
 
         # print("ENV_CONFIG:")
         # pprint(env_config)
@@ -40,6 +43,9 @@ class ScreepsEnv(gym.Env):
             self.interface = interface
             self.uses_external_interface = True
 
+        self.use_viewer = use_viewer
+        self.fig = None
+
         # Request a new mini-environment from the screeps interface. Returns a reference to the environment's room name
         self.room = self.interface.add_env(self.vector_index)
 
@@ -50,6 +56,8 @@ class ScreepsEnv(gym.Env):
         # TODO: these are placeholder spaces. obs space is x,y of self and enemy, act space is movement in 8 directions
         self.observation_space = gym.spaces.MultiDiscrete([50, 50, 50, 50])
         self.action_space = gym.spaces.Discrete(8)
+        self.state = None
+
 
     def process_state(self, room_state):
         terrain = room_state["terrain"]
@@ -125,9 +133,9 @@ class ScreepsEnv(gym.Env):
 
         self.interface.tick()
 
-        state = self.interface.get_room_state(self.room)
+        self.state = self.interface.get_room_state(self.room)
 
-        return self.process_observation(state)
+        return self.process_observation(self.state)
 
     def process_observation(self, state):
         """Returns the observation from a room given the state after running self.interface.tick()"""
@@ -149,13 +157,61 @@ class ScreepsEnv(gym.Env):
     def reset_soft(self):
         self.interface.reset_room(self.room)
 
-    def render(self, mode = 'human'):
-        print("Run the environment with use_backend=True to connect the Screeps client")
+    def render(self, mode = 'rgb_array'):
+        if mode == 'human':
+            print("Run the environment with use_backend=True to connect the Screeps client")
+            return
+        elif mode == 'rgb_array':
+            arr = np.zeros((50, 50, 3), dtype = int)
+            if self.state is None:
+                return arr
+            terrain = self.state["terrain"]
+            room_objects = self.state["roomObjects"]
+
+            plain_color = np.array([43, 43, 43])
+            swamp_color = np.array([41, 42, 24])
+            wall_color = np.array([17, 17, 17])
+
+            # Color terrain
+            for y in np.arange(50):
+                for x in np.arange(50):
+                    tile = terrain[y][x]
+                    if tile == 2:
+                        color = swamp_color
+                    elif tile == 1:
+                        color = wall_color
+                    else:
+                        color = plain_color
+
+                    arr[y][x][...] = color
+
+            # Color creeps
+            for obj in room_objects:
+                if obj['type'] == 'creep':
+                    x, y = obj['x'], obj['y']
+                    if 'Agent1' in obj['name']:
+                        arr[y][x][...] = np.array([0, 0, 255])
+                    elif 'Agent2' in obj['name']:
+                        arr[y][x][...] = np.array([255, 0, 0])
+
+            print(arr)
+
+            if self.use_viewer:
+                if self.fig is None:
+                    self.fig = plt.figure(figsize = (5, 5))
+                # self.viewer.imshow(arr)
+                plt.imshow(arr)
+                plt.pause(0.1)
+
+            return arr
 
     def seed(self, seed = None):
         pass  # TODO: do we need this?
 
     def close(self):
         """Close child processes"""
+        if self.use_viewer:
+            plt.close()
+
         if not self.uses_external_interface:
             self.interface.close()
