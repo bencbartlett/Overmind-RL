@@ -50,7 +50,8 @@ if __name__ == "__main__":
                 # "lr"         : grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
                 "num_gpus"   : 0,
                 "num_workers": 0,  # parallelism
-                # "num_envs_per_worker": 10,
+                "num_envs_per_worker": 10,
+                # "remote_worker_envs": True,
                 "env_config" : {
                     "use_backend": False,
                 },

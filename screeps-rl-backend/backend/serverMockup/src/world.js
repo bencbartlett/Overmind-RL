@@ -361,6 +361,18 @@ class World {
 		return new User(this.server, user).init();
 	}
 
+	/**
+     * Triggers reset of global for a user
+     */
+    async triggerGlobalReset(user) {
+    	const {C, db, env} = await this.load();
+    	await db['users.code'].update({user: user._id, branch: 'default'}, {
+            $set: {
+                timestamp: new Date().getTime()
+            }
+        });
+    }
+
 	async updateEnvTerrain(db, env) {
 		let walled = '';
 		for (let i = 0; i < 2500; i += 1) {

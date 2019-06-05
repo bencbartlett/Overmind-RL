@@ -1,3 +1,4 @@
+import atexit
 import json
 import os
 from subprocess import Popen
@@ -5,16 +6,16 @@ from subprocess import Popen
 import numpy as np
 import zerorpc
 
-import atexit
-
 ROOM = "E0S0"  # default room
 BACKEND_RELATIVE_PATH = "../../screeps-rl-backend/backend/server.js"
 BACKEND_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), BACKEND_RELATIVE_PATH)
 RL_ACTION_SEGMENT = 70
 
+
 def terminate_server_process(proc):
     print("Terminating Screeps server process with pid {}".format(proc.pid))
     proc.terminate()
+
 
 class ScreepsInterface:
     """
@@ -22,16 +23,16 @@ class ScreepsInterface:
     environment. This can in turn be controlled by the ScreepsEnv gym environment.
     """
 
-    def __init__(self, worker_index, use_backend = False):
+    def __init__(self, worker_index, start_server = True, use_backend = False):
 
         self.index = worker_index
         self.gamePort = 21025 + 5 * worker_index
         self.port = 22025 + 5 * worker_index
 
-        #
-        print("Starting remote server at " + str(self.port) + "...")
-        self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
-        atexit.register(terminate_server_process, self.server_process)
+        if start_server:
+            print("Starting remote server at " + str(self.port) + "...")
+            self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
+            atexit.register(terminate_server_process, self.server_process)
 
         self.c = zerorpc.Client(connect_to = "tcp://127.0.0.1:" + str(self.port),
                                 timeout = 15,
@@ -200,4 +201,3 @@ class ScreepsInterface:
         print("Response: " + str(self.server_process.poll()))
 
         self.server_process.terminate()
-

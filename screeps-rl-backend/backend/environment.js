@@ -46,20 +46,35 @@ class ScreepsEnvironment {
      * Adds a room "environment" to the screeps world (used for vectorized
      * Python environments)
      */
-    addEnv(index) {
-        // if (index === undefined) {
-        //     index = this.roomIndices.length;
-        // }
+    async addEnv(index) {
         if (this.roomIndices.includes(index)) {
             throw new Error(`Cannot add room environment with vector_index ${index}! ` +
                 `this.index = ${this.index}; this.roomIndices = ${this.roomIndices}`);
-        } else if (this.server.started) {
-            throw new Error(`ScreepsEnvironment.addEnv() can only be called before starting server!`)
         } else {
             this.roomIndices.push(index);
+            if (this.server.started) {
+                const room = ScreepsEnvironment._roomFromIndex(index);
+                await this.addRoom(room);
+                await this.resetRoom(room);
+            }
         }
         return ScreepsEnvironment._roomFromIndex(index);
     }
+
+    // addEnv(index) {
+    //     // if (index === undefined) {
+    //     //     index = this.roomIndices.length;
+    //     // }
+    //     if (this.roomIndices.includes(index)) {
+    //         throw new Error(`Cannot add room environment with vector_index ${index}! ` +
+    //             `this.index = ${this.index}; this.roomIndices = ${this.roomIndices}`);
+    //     } else if (this.server.started) {
+    //         throw new Error(`ScreepsEnvironment.addEnv() can only be called before starting server!`)
+    //     } else {
+    //         this.roomIndices.push(index);
+    //     }
+    //     return ScreepsEnvironment._roomFromIndex(index);
+    // }
 
     /**
      * Lists the names of all rooms in the simulation
@@ -117,6 +132,7 @@ class ScreepsEnvironment {
         }
         await this.server.world.addRoom(roomName);
         await this.server.world.setTerrain(roomName, terrain);
+        await this.triggerAllGlobalResets();
     }
 
     /**
@@ -288,6 +304,14 @@ class ScreepsEnvironment {
 
         await this.server.world.addRoomObject(creep.room, creep.type, creep.x, creep.y, creep);
 
+    }
+
+    /**
+     * Triggers reset of global for all users
+     */
+    async triggerAllGlobalResets() {
+    	await this.server.world.triggerGlobalReset(this.agent1);
+    	await this.server.world.triggerGlobalReset(this.agent2);
     }
 
     // Data retrieval methods ==================================================
