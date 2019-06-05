@@ -1,0 +1,4 @@
+name = 'screeps_rl_env.processors_multiagent'
+
+from screeps_rl_env.processors_multiagent.processor import ScreepsMultiAgentProcessor
+from screeps_rl_env.processors_multiagent.approach import ApproachProcessor

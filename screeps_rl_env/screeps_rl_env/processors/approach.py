@@ -7,13 +7,13 @@ class ApproachProcessor(ScreepsProcessor):
     Train a creep to approach the other creep in the room using base movement intents
     """
 
-    def process_state(self, room_state, creep_id=0):
+    def process_state(self, room_state):
         terrain = room_state["terrain"]
         room_objects = room_state["roomObjects"]
         event_log = room_state["eventLog"]
 
-        my_creep_name = "Agent1_{}_{}".format(self.env.vector_index, 0)
-        enemy_creep_name = "Agent2_{}_{}".format(self.env.vector_index, 0)
+        my_creep_name = "Agent1_{}:{}".format(0, self.env.room)
+        enemy_creep_name = "Agent2_{}:{}".format(0, self.env.room)
 
         enemy_creeps = list(filter(lambda obj: obj["type"] == "creep" and
                                                obj["name"] == enemy_creep_name, room_objects))
@@ -28,8 +28,8 @@ class ApproachProcessor(ScreepsProcessor):
         else:
             return None  # TODO: placeholder
 
-    def process_action(self, action, creep_id=0):
-        creep_name = "Agent1_{}_{}".format(self.env.vector_index, creep_id)
+    def process_action(self, action, creep_id = 0):
+        creep_name = "Agent1_{}:{}".format(creep_id, self.env.room)
         return {creep_name: [["move", int(action) + 1]]}
 
     def process_reward(self, observation):

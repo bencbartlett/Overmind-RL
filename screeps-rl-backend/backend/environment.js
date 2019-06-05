@@ -51,7 +51,7 @@ class ScreepsEnvironment {
         //     index = this.roomIndices.length;
         // }
         if (this.roomIndices.includes(index)) {
-            throw new Error(`Cannot add room environment with vector_index ${index}! `+
+            throw new Error(`Cannot add room environment with vector_index ${index}! ` +
                 `this.index = ${this.index}; this.roomIndices = ${this.roomIndices}`);
         } else if (this.server.started) {
             throw new Error(`ScreepsEnvironment.addEnv() can only be called before starting server!`)
@@ -123,14 +123,46 @@ class ScreepsEnvironment {
      * Resets a specified room, deleting all creeps and spawning in new ones.
      * Can be called while server is running.
      */
-    async resetRoom(roomName) {
+    async resetRoom(roomName, creepConfig = null) {
         await this.deleteRoomCreeps(roomName);
 
-        let [x1, y1] = await this.server.world.getOpenPosition(roomName);
-        await this.createCreep(this.agent1, roomName, x1, y1);
+        if (creepConfig) {
+            creepConfig = JSON.parse(creepConfig);
+        }
 
-        let [x2, y2] = await this.server.world.getOpenPosition(roomName);
-        await this.createCreep(this.agent2, roomName, x2, y2);
+        if (creepConfig != null) {
+            // Manually specified list of creep initial setups
+            for (let creep of creepConfig) {
+                let {player_name, creep_index, body, x_init, y_init} = creep;
+
+                let x, y;
+                if (x_init === undefined || y_init === undefined) {
+                    [x, y] = await this.server.world.getOpenPosition(roomName);
+                } else {
+                    [x, y] = [x_init, y_init];
+                }
+
+                let agent;
+                if (player_name === "Agent1") {
+                    agent = this.agent1;
+                } else if (player_name === "Agent2") {
+                    agent = this.agent2;
+                } else {
+                    throw new Error(`Invalid player_name: ${player_name}`)
+                }
+
+                let name = `${player_name}_${creep_index}:${roomName}`;
+
+                await this.createCreep(agent, roomName, x, y, name, body);
+            }
+        } else {
+            let [x1, y1] = await this.server.world.getOpenPosition(roomName);
+            await this.createCreep(this.agent1, roomName, x1, y1);
+
+            let [x2, y2] = await this.server.world.getOpenPosition(roomName);
+            await this.createCreep(this.agent2, roomName, x2, y2);
+        }
+
     }
 
     /**
@@ -204,10 +236,10 @@ class ScreepsEnvironment {
     }
 
     async generateCreepName(agent, roomName) {
-        const roomIndex = ScreepsEnvironment._indexFromRoom(roomName);
+        // const roomIndex = ScreepsEnvironment._indexFromRoom(roomName);
         const creepsInRoom = await this.server.world.getRoomCreeps(roomName, agent.id);
         const creepIndex = creepsInRoom.length;
-        return `${agent.username}_${roomIndex}_${creepIndex}`
+        return `${agent.username}_${creepIndex}:${roomName}`
     }
 
     static generateCreepBody() {
@@ -219,7 +251,7 @@ class ScreepsEnvironment {
         return body;
     }
 
-    async createCreep(agent, room, x, y, name = undefined, body = undefined, lifetime=100) {
+    async createCreep(agent, room, x, y, name = undefined, body = undefined, lifetime = 100) {
 
         if (!name) {
             name = await this.generateCreepName(agent, room)
@@ -242,6 +274,7 @@ class ScreepsEnvironment {
             type: 'creep',
             room: room,
             user: agent.id,
+            username: agent.username, // not part of standard creep db entries
             hits: body.length * 100,
             hitsMax: body.length * 100,
             spawning: false,

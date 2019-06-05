@@ -63,9 +63,9 @@ class ScreepsInterface:
         # Clear caches
         self.terrain_cache = {}
 
-    def reset_room(self, room):
+    def reset_room(self, room, creep_config = None):
         del self.terrain_cache[room]
-        self.c.resetRoom(room)
+        self.c.resetRoom(room, json.dumps(creep_config))
 
     def tick(self):
         """Run for a tick"""
