@@ -1,13 +1,11 @@
-from socket import gethostname
+import argparse
 
 import argparse
 
 import ray
 from ray import tune
-from ray.rllib.agents.impala import ImpalaTrainer
-from ray.rllib.agents.ppo import PPOTrainer
-from ray.tune import register_env, grid_search
-from screeps_rl_env import ScreepsEnv, ScreepsMultiAgentEnv
+from ray.tune import register_env
+from screeps_rl_env import ScreepsMultiAgentEnv, CreepAgent
 
 if __name__ == "__main__":
 
@@ -16,8 +14,6 @@ if __name__ == "__main__":
     # parser.add_argument("--num_workers", type = int, default = None)
 
     args = parser.parse_args()
-
-    register_env("screeps_multiagent", lambda config: ScreepsMultiAgentEnv(config))
 
     LOCAL_HOST_NAME = "tau"
 
@@ -32,9 +28,18 @@ if __name__ == "__main__":
 
     print("Cluster resources:", ray.cluster_resources())
 
-    # policies
+    num_creeps_per_side = [2, 2]
+    creeps_player1 = [CreepAgent(1, i) for i in range(num_creeps_per_side[0])]
+    creeps_player2 = [CreepAgent(2, i) for i in range(num_creeps_per_side[1])]
+    agents = [*creeps_player1, *creeps_player2]
 
-    # ModelCatalog.register_custom_model("my_model", CustomModel)
+    register_env("screeps_multiagent", lambda config: ScreepsMultiAgentEnv(config, agents = agents))
+
+    observation_space, action_space = ScreepsMultiAgentEnv.get_spaces(agents)
+    policies = {
+        creep.agent_id: (None, observation_space, action_space, {}) for creep in agents
+    }
+
     tune.run(
             "PPO",
             stop = {
@@ -44,13 +49,14 @@ if __name__ == "__main__":
                 "env"        : "screeps_multiagent",
                 # "lr"         : grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
                 "num_gpus"   : 0,
-                "num_workers": 6,  # parallelism
+                "num_workers": 0,  # parallelism
                 # "num_envs_per_worker": 10,
                 "env_config" : {
                     "use_backend": False,
                 },
-                "multiagent": {
-
+                "multiagent" : {
+                    "policies": policies,
+                    "policy_mapping_fn": tune.function(lambda agent_id: agent_id),
                 }
             },
             checkpoint_freq = 100,

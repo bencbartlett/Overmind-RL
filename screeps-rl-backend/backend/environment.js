@@ -124,6 +124,9 @@ class ScreepsEnvironment {
      * Can be called while server is running.
      */
     async resetRoom(roomName, creepConfig = null) {
+
+        console.log(`\n------ Resetting room ${roomName}, index ${this.index} ------\n`);
+
         await this.deleteRoomCreeps(roomName);
 
         if (creepConfig) {
@@ -136,7 +139,7 @@ class ScreepsEnvironment {
                 let {player_name, creep_index, body, x_init, y_init} = creep;
 
                 let x, y;
-                if (x_init === undefined || y_init === undefined) {
+                if (x_init == null || y_init == null) {
                     [x, y] = await this.server.world.getOpenPosition(roomName);
                 } else {
                     [x, y] = [x_init, y_init];
@@ -170,7 +173,7 @@ class ScreepsEnvironment {
      */
     async resetTrainingEnvironment() {
 
-        console.log('\n----------RESETTING TRAINING ENVIRONMENT----------\n');
+        console.log(`\n------ RESETTING TRAINING ENVIRONMENT ${this.index} ------\n`);
 
         // Clear the database
         await this.server.world.reset();

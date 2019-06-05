@@ -42,7 +42,7 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
         return ob
 
     def process_action(self, action, agent_id):
-        creep_name = self.env.agents_dict[agent_id].get_full_name()
+        creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
         return {creep_name: [["move", int(action) + 1]]}
 
     def process_reward(self, obs, agent_id):

@@ -170,8 +170,11 @@ class World {
 	/**
 	 * Delete all creeps within a room
 	 */
-	async deleteRoomCreeps(roomName) {
+	async deleteRoomCreeps(roomName, deleteTombstones=true) {
 		const {db} = await this.load();
+		if (deleteTombstones) {
+			await db['rooms.objects'].removeWhere({room: roomName, type: 'tombstone'});
+		}
 		return await db['rooms.objects'].removeWhere({room: roomName, type: 'creep'});
 	}
 

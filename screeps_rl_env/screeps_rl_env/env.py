@@ -106,7 +106,7 @@ class ScreepsEnv(gym.Env):
     def reset_soft(self):
         self.interface.reset_room(self.room)
 
-    def render(self, mode = 'rgb_array'):
+    def render(self, mode = 'human'):
 
         if mode == 'human':
             if not self.use_backend:

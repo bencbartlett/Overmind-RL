@@ -24,6 +24,7 @@ setuptools.setup(
         "zerorpc",
         "opencv-python-headless",
         "lz4",
-        "setproctitle"
+        "setproctitle",
+        "pydash"
     ],
 )

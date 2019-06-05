@@ -84,20 +84,31 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
         # Request a new mini-environment from the screeps interface. Returns a reference to the environment's room name
         self.room = self.interface.add_env(self.vector_index)
+        self.time = 0
 
         # Reset if running in non-vector mode (allow vector env to reset if interface is specified)
         if not self.uses_external_interface:
             self.interface.reset()
-            self.interface.tick()
+            self.time = self.interface.tick()
 
         # TODO: hardcoded
-        self.observation_space = gym.spaces.MultiDiscrete([50, 50] * len(self.agents))
-        self.action_space = gym.spaces.Discrete(8)
+        self.observation_space, self.action_space = ScreepsMultiAgentEnv.get_spaces(self.agents)
 
         self.state = None
 
         # Reset to get desired creep config
         self.reset()
+
+    @staticmethod
+    def get_spaces(agents: List[CreepAgent]):
+        """
+        Yields the observation and action spaces; convenient for fetching spaces without instantiatng an environment
+        :param agents: list of agents that would instantiate the ScreepsMultiAgentEnv
+        :return: observation_space, action_space
+        """
+        observation_space = gym.spaces.MultiDiscrete((50, 50) * len(agents))
+        action_space = gym.spaces.Discrete(8)
+        return observation_space, action_space
 
     # def reset(self):
     #     """Resets the env and returns observations from ready agents.
@@ -112,7 +123,7 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
     def reset(self):
         self.interface.reset_room(self.room, [agent.serialize() for agent in self.agents])
-        self.interface.tick()
+        self.time = self.interface.tick()
         state = self.interface.get_room_state(self.room)
         return {id: self.processor.process_state(state, id) for id in self.agents_dict.keys()}
 
@@ -132,10 +143,12 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
             infos (dict): Optional info values for each agent id.
         """
 
+        # print(f"action_dict: {action_dict}")
+
         # build a dictionary of {username: {creepName: [list of actions and arguments] } }
         all_actions = {}
         for id, action in action_dict.items():
-            agent = self.agents[id]
+            agent = self.agents_dict[id]
             if all_actions.get(agent.player_name) is None:
                 all_actions[agent.player_name] = {}
             all_actions[agent.player_name].update(self.processor.process_action(action, id))
@@ -144,7 +157,7 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         self.interface.send_all_actions(all_actions)
 
         # Run the tick
-        self.interface.tick()
+        self.time = self.interface.tick()
 
         # Return processed state
         self.state = self.interface.get_room_state(self.room)
@@ -152,6 +165,10 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         obs, rewards, dones, infos = {}, {}, {}, {}
         for id in action_dict.keys():
             obs[id], rewards[id], dones[id], infos[id] = self.processor.process_observation(self.state, id)
+        dones["__all__"] = any(dones.values())
+        # assert obs[id] is not None, f"Obs is none! self.time={self.time}"
+
+        # print(f"Returns: {obs} | {rewards} | {dones} | {infos}")
 
         return obs, rewards, dones, infos
 
