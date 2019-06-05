@@ -11,7 +11,8 @@ class ScreepsMultiAgentProcessor(ABC):
     """
 
     def __init__(self, env):
-        self.env = env
+        from screeps_rl_env import ScreepsMultiAgentEnv  # local import needed to prevent circular dependencies
+        self.env: ScreepsMultiAgentEnv = env
 
     @abstractmethod
     def process_state(self, room_state: Dict, agent_id: str) -> np.array:

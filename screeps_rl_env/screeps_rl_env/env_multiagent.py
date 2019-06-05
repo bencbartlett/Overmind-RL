@@ -1,13 +1,13 @@
 from time import sleep
 from typing import Type, Union, Dict, List
 
+import gym
 import matplotlib.pyplot as plt
 import numpy as np
 from ray.rllib import MultiAgentEnv
 from ray.rllib.env import EnvContext
 from screeps_rl_env.interface import ScreepsInterface
-from screeps_rl_env.processors import ApproachProcessor
-from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor
+from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor, ApproachMultiAgentProcessor
 
 PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
 
@@ -46,8 +46,8 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
     def __init__(self,
                  env_config: Union[EnvContext, Dict],
-                 agents: List[CreepAgent],
-                 processor: Type[ScreepsMultiAgentProcessor] = ApproachProcessor,
+                 agents: List[CreepAgent] = DEFAULT_AGENT_CONFIG,
+                 processor: Type[ScreepsMultiAgentProcessor] = ApproachMultiAgentProcessor,
                  worker_index: int = None,
                  vector_index: int = None,
                  interface: ScreepsInterface = None,
@@ -90,8 +90,10 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
             self.interface.reset()
             self.interface.tick()
 
-        self.observation_space = None
-        self.action_space = None
+        # TODO: hardcoded
+        self.observation_space = gym.spaces.MultiDiscrete([50, 50] * len(self.agents))
+        self.action_space = gym.spaces.Discrete(8)
+
         self.state = None
 
         # Reset to get desired creep config

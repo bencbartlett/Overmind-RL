@@ -13,7 +13,7 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
         # event_log = room_state["eventLog"]
 
         my_creep = self.env.agents_dict[agent_id]
-        my_creep_name = my_creep.get_full_name()
+        my_creep_name = my_creep.get_full_name(self.env.room)
         my_creep_username = my_creep.player_name
 
         tombstones_present = any(filter(lambda obj: obj['type'] == 'tombstone', room_objects))
@@ -33,9 +33,9 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
                 else:
                     me = creep
 
-        ob = np.concatenate((
-            [creep['x'], creep['y']] for creep in (*enemies, *allies, me)
-        ))
+        ob = np.concatenate([
+            [creep['x'], creep['y']] for creep in [*enemies, *allies, me]
+        ])
 
         self.prev_ob = ob
 
