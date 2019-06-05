@@ -60,7 +60,7 @@ if __name__ == "__main__":
     tune.run(
             "PPO",
             stop = {
-                "timesteps_total": 1e6,
+                "timesteps_total": 5e5,
             },
             config = {
                 "env"        : "screeps_vectorized",  # "screeps",  # or "corridor" if registered above
@@ -72,7 +72,7 @@ if __name__ == "__main__":
                     "use_backend": False,
                 },
             },
-            checkpoint_freq = 100000,
+            checkpoint_freq = 100,
             checkpoint_at_end = True,
             queue_trials = True
     )
