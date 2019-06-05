@@ -2,6 +2,7 @@
 **/cluster-single-machine.yaml
 **/cluster.yaml
 **/screeps-rl-credentials.json
+**/credentials.json
 
 # Output folders
 server

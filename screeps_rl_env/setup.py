@@ -25,6 +25,7 @@ setuptools.setup(
         "opencv-python-headless",
         "lz4",
         "setproctitle",
-        "pydash"
+        "pydash",
+        "h5py"
     ],
 )
