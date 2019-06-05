@@ -1,5 +1,7 @@
 import unittest
+from time import time
 
+import numpy as np
 from screeps_rl_env import ScreepsEnv, ScreepsVectorEnv, ScreepsInterface
 
 
@@ -26,7 +28,7 @@ class TestScreepsEnv(unittest.TestCase):
 
     def test_ScreepsEnv(self):
         print("\n\n\nTesting ScreepsEnv...")
-        env = ScreepsEnv(worker_index = 0, vector_index = 0)
+        env = ScreepsEnv({}, worker_index = 0, vector_index = 0)
         env.reset()
 
         for tick in range(20):
@@ -38,7 +40,7 @@ class TestScreepsEnv(unittest.TestCase):
 
     def test_ScreepsVectorEnv(self, num_envs = 3):
         print("\n\n\nTesting ScreepsVectorEnv...")
-        env = ScreepsVectorEnv(worker_index = 0, num_envs = num_envs)
+        env = ScreepsVectorEnv({}, worker_index = 0, num_envs = num_envs)
         env.vector_reset()
 
         for tick in range(20):
@@ -55,6 +57,41 @@ class TestScreepsEnv(unittest.TestCase):
             print(obs, rewards, dones, infos)
 
         env.close()
+
+    def test_SpeedComparison(self, num_ticks = 100, num_envs = 20):
+
+        print("\n\n\nTesting speed comparison...")
+
+        tick_times_single = []
+        tick_times_vector = []
+
+        # Single environment
+        env = ScreepsEnv({}, worker_index = 0, vector_index = 0)
+        env.reset()
+        for tick in range(num_ticks):
+            start = time()
+            action = tick % 8
+            env.step(action)
+            tick_times_single.append(time() - start)
+        env.close()
+
+        # Vector environment
+        env = ScreepsVectorEnv({}, worker_index = 0, num_envs = num_envs)
+        env.vector_reset()
+        for tick in range(num_ticks):
+            start = time()
+            actions = [tick % 8] * num_envs
+            env.vector_step(actions)
+            tick_times_vector.append(time() - start)
+
+        print("\n\n\n------------------------------------")
+        print(f"Single environment: simulated {num_ticks} ticks with average tick duration " +
+              f"of {np.mean(tick_times_single)}s")
+        print(f"Vector environment: simulated {num_ticks * num_envs} total room-ticks with average tick duration " +
+              f"of {np.mean(tick_times_vector)}s, per room avg: {np.mean(tick_times_vector) / num_envs}s")
+
+        env.close()
+
 
 if __name__ == "__main__":
     unittest.main()

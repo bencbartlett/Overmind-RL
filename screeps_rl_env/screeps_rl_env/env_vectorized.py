@@ -47,7 +47,7 @@ class ScreepsVectorEnv(VectorEnv):
         self.interface.reset()
         self.interface.tick()
         states_all = self.interface.get_all_room_states()
-        return [env.process_state(states_all[env.room]) for env in self.envs]
+        return [env.processor.process_state(states_all[env.room]) for env in self.envs]
 
     def reset_at(self, index):
         """Resets a single environment.
@@ -59,7 +59,7 @@ class ScreepsVectorEnv(VectorEnv):
         room = self.envs[index].room
         self.interface.reset_room(room)
         state = self.interface.get_room_state(room)
-        return self.envs[index].process_state(state)
+        return self.envs[index].processor.process_state(state)
 
     def vector_step(self, actions):
         """Vectorized step.
@@ -79,7 +79,7 @@ class ScreepsVectorEnv(VectorEnv):
         for env, action in zip(self.envs, actions):
             if all_actions.get(env.username) is None:
                 all_actions[env.username] = {}
-            all_actions[env.username].update(env.process_action(action))
+            all_actions[env.username].update(env.processor.process_action(action))
 
         # send actions to screeps environment
         self.interface.send_all_actions(all_actions)
@@ -95,7 +95,7 @@ class ScreepsVectorEnv(VectorEnv):
         dones = []
         infos = []
         for env in self.envs:
-            ob, reward, done, info = env.process_observation(all_states[env.room])
+            ob, reward, done, info = env.processor.process_observation(all_states[env.room])
             obs.append(ob)
             rewards.append(reward)
             dones.append(done)

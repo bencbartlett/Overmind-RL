@@ -1,7 +1,7 @@
 # Things with sensitive keys
-/models/cluster-single-machine.yaml
-/models/cluster.yaml
-/models/screeps-rl-credentials.json
+**/cluster-single-machine.yaml
+**/cluster.yaml
+**/screeps-rl-credentials.json
 
 # Output folders
 server

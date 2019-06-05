@@ -1,32 +1,28 @@
-import gym
-import numpy as np
-import matplotlib.pyplot as plt
-from gym.envs.classic_control.rendering import SimpleImageViewer
+from time import sleep
+from typing import Type, Union, Dict
 
+import gym
+import matplotlib.pyplot as plt
+import numpy as np
+from ray.rllib.env import EnvContext
 from screeps_rl_env.interface import ScreepsInterface
+from screeps_rl_env.processors import ApproachProcessor, ScreepsProcessor
 
 PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
-
-
-def simple_reward(creep1xy, creep2xy):
-    """Simple reward that tells creeps to move toward each other"""
-    x1, y1 = creep1xy
-    x2, y2 = creep2xy
-    return 50 - np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
 class ScreepsEnv(gym.Env):
 
     def __init__(self,
-                 env_config = None,
-                 worker_index = None,
-                 vector_index = None,
-                 interface = None,
-                 use_backend = False,
-                 use_viewer = False):
+                 env_config: Union[EnvContext, Dict],
+                 processor: Type[ScreepsProcessor] = ApproachProcessor,
+                 worker_index: int = None,
+                 vector_index: int = None,
+                 interface: ScreepsInterface = None,
+                 use_backend: bool = False,
+                 use_viewer: bool = False):
 
-        # print("ENV_CONFIG:")
-        # pprint(env_config)
+        self.processor = processor(self)
 
         self.worker_index = worker_index if worker_index is not None else env_config.worker_index
         self.vector_index = vector_index if vector_index is not None else env_config.vector_index
@@ -35,9 +31,12 @@ class ScreepsEnv(gym.Env):
 
         self.username = "Agent1"  # TODO: hardcoded for now
 
+        self.use_backend = use_backend
+        self.client_connected = False
+
         if interface is None:
             print('starting interface with worker index {}'.format(self.worker_index))
-            self.interface = ScreepsInterface(self.worker_index, use_backend = use_backend)
+            self.interface = ScreepsInterface(self.worker_index, use_backend = self.use_backend)
             self.uses_external_interface = False
         else:
             self.interface = interface
@@ -57,46 +56,6 @@ class ScreepsEnv(gym.Env):
         self.observation_space = gym.spaces.MultiDiscrete([50, 50, 50, 50])
         self.action_space = gym.spaces.Discrete(8)
         self.state = None
-
-
-    def process_state(self, room_state):
-        terrain = room_state["terrain"]
-        room_objects = room_state["roomObjects"]
-        event_log = room_state["eventLog"]
-
-        my_creep_name = "Agent1_{}_{}".format(self.vector_index, 0)
-        enemy_creep_name = "Agent2_{}_{}".format(self.vector_index, 0)
-
-        enemy_creeps = list(filter(lambda obj: obj["type"] == "creep" and
-                                               obj["name"] == enemy_creep_name, room_objects))
-        enemy_creep = enemy_creeps[0] if len(enemy_creeps) > 0 else None
-
-        my_creeps = list(filter(lambda obj: obj["type"] == "creep" and
-                                            obj["name"] == my_creep_name, room_objects))
-        my_creep = my_creeps[0] if len(my_creeps) > 0 else None
-
-        if enemy_creep is not None and my_creep is not None:
-            return np.array([my_creep["x"], my_creep["y"], enemy_creep["x"], enemy_creep["y"]])
-        else:
-            return None  # TODO: placeholder
-
-    def process_action(self, action):
-        """
-        Placeholder function for processing an action
-        :param action: int, direction to move (0-7, inclusive)
-        :return: JSON-formatted command to tell the creep to move
-        """
-        creep_name = "Agent1_{}_{}".format(self.vector_index, 0)
-        return {creep_name: [["move", int(action) + 1]]}
-
-    def process_reward(self, observation):
-        """
-        Process the observation made in step() and return a reward
-        :param observation: any
-        :return: reward (float)
-        """
-        my_x, my_y, foe_x, foe_y = observation
-        return simple_reward((my_x, my_y), (foe_x, foe_y))
 
     # gym.Env methods ==================================================================================================
 
@@ -128,39 +87,37 @@ class ScreepsEnv(gym.Env):
                  However, official evaluations of your agent are not allowed to
                  use this for learning.
         """
-        command = self.process_action(action)
+        command = self.processor.process_action(action)
         self.interface.send_action(command, self.username)
 
         self.interface.tick()
 
         self.state = self.interface.get_room_state(self.room)
 
-        return self.process_observation(self.state)
-
-    def process_observation(self, state):
-        """Returns the observation from a room given the state after running self.interface.tick()"""
-        ob = self.process_state(state)
-
-        if ob is not None:
-            return ob, self.process_reward(ob), False, {}
-        else:
-            ob = np.array([25, 25, 25, 25])
-            return ob, 0, True, {}
+        return self.processor.process_observation(self.state)
 
     def reset(self):
         """Reset the server environment"""
         self.interface.reset()
         self.interface.tick()
         state = self.interface.get_room_state(self.room)
-        return self.process_state(state)
+        return self.processor.process_state(state)
 
     def reset_soft(self):
         self.interface.reset_room(self.room)
 
     def render(self, mode = 'rgb_array'):
+
         if mode == 'human':
-            print("Run the environment with use_backend=True to connect the Screeps client")
-            return
+            if not self.use_backend:
+                print("Run the environment with use_backend=True to connect the Screeps client")
+                return
+            if not self.client_connected:
+                _ = input("Connect the Screeps client and press enter when ready to proceed.")
+                self.client_connected = True
+            sleep_time = 0.1
+            sleep(sleep_time)
+
         elif mode == 'rgb_array':
             arr = np.zeros((50, 50, 3), dtype = int)
             if self.state is None:
@@ -194,14 +151,12 @@ class ScreepsEnv(gym.Env):
                     elif 'Agent2' in obj['name']:
                         arr[y][x][...] = np.array([255, 0, 0])
 
-            print(arr)
-
             if self.use_viewer:
                 if self.fig is None:
                     self.fig = plt.figure(figsize = (5, 5))
                 # self.viewer.imshow(arr)
                 plt.imshow(arr)
-                plt.pause(0.1)
+                plt.pause(0.05)
 
             return arr
 
