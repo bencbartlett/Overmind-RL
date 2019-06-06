@@ -26518,8 +26518,11 @@ class ActionParser {
                             creep.rangedMassAttack();
                             break;
                         case 'heal':
-                            if (targ)
+                            if (targ) {
                                 creep.heal(targ);
+                            } else if (typeof id != 'string') {
+                                creep.heal(creep);
+                            }
                             break;
                         case 'rangedHeal':
                             if (targ)

@@ -124,15 +124,11 @@ class ScreepsEnvironment {
     }
 
     /**
-     * Adds a room to the world. Must be called BEFORE starting server.
+     * Adds a room to the world, optionally setting the terrain
      */
     async addRoom(roomName, terrain = undefined) {
-        if (!terrain) {
-            terrain = ScreepsEnvironment.generateTerrain();
-        }
         await this.server.world.addRoom(roomName);
-        await this.server.world.setTerrain(roomName, terrain);
-        await this.triggerAllGlobalResets();
+        await this.setRoomTerrain(roomName, terrain);
     }
 
     /**
@@ -181,6 +177,9 @@ class ScreepsEnvironment {
             let [x2, y2] = await this.server.world.getOpenPosition(roomName);
             await this.createCreep(this.agent2, roomName, x2, y2);
         }
+
+        // Clear the event log
+        await this.clearEventLog(roomName);
 
     }
 
@@ -264,8 +263,12 @@ class ScreepsEnvironment {
     static generateCreepBody() {
         // Add a creep to each
         const body = [
+            {type: 'attack', hits: 100, boost: undefined},
             {type: 'rangedAttack', hits: 100, boost: undefined},
-            {type: 'move', hits: 100, boost: undefined}
+            {type: 'heal', hits: 100, boost: undefined},
+            {type: 'move', hits: 100, boost: undefined},
+            {type: 'move', hits: 100, boost: undefined},
+            {type: 'move', hits: 100, boost: undefined},
         ];
         return body;
     }
@@ -314,8 +317,6 @@ class ScreepsEnvironment {
     	await this.server.world.triggerGlobalReset(this.agent2);
     }
 
-    // Data retrieval methods ==================================================
-
     /**
      * Returns the terrain for a room, serialized to a 2500-char string by
      * default
@@ -327,6 +328,18 @@ class ScreepsEnvironment {
         } else {
             return terrain;
         }
+    }
+
+    /**
+     * Sets the terrain for a room and resets global for each user to trigger
+     * recache of terrain data
+     */
+    async setRoomTerrain(roomName, terrain=undefined) {
+        if (!terrain) {
+            terrain = ScreepsEnvironment.generateTerrain();
+        }
+        await this.server.world.setTerrain(roomName, terrain);
+        await this.triggerAllGlobalResets();
     }
 
     /**
@@ -406,6 +419,10 @@ class ScreepsEnvironment {
 
     async getEventLog(roomName) {
         return await this.server.world.getEventLog(roomName);
+    }
+
+    async clearEventLog(roomName) {
+        return await this.server.world.setEventLog(roomName, "[]");
     }
 
     async getAllEventLogs() {

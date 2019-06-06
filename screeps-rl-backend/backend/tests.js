@@ -33,7 +33,7 @@ async function testChangingRoomTerrain() {
     const terrain = new TerrainMatrix();
     const walls = [[25, 25]];
     _.each(walls, ([x, y]) => terrain.set(x, y, 'wall'));
-    await env.server.world.setTerrain(roomName, terrain);
+    await env.setRoomTerrain(roomName, terrain);
 
     console.log(`Terrain for room ${roomName}: `);
     console.log(await env.getRoomTerrain(roomName, false));
@@ -42,7 +42,7 @@ async function testChangingRoomTerrain() {
     const terrain2 = new TerrainMatrix();
     const walls2 = [[30, 30]];
     _.each(walls2, ([x, y]) => terrain2.set(x, y, 'wall'));
-    await env.server.world.setTerrain(roomName, terrain2);
+    await env.setRoomTerrain(roomName, terrain2);
 
     console.log(`Terrain for room ${roomName}: `);
     console.log(await env.getRoomTerrain(roomName, false));
@@ -54,15 +54,19 @@ async function testChangingRoomTerrain() {
 }
 
 async function testResettingRooms() {
+
+    const room = ScreepsEnvironment._roomFromIndex(0);
+
+    console.log("Pre-reset RoomObjects:", await env.getRoomObjects(room));
+
     console.log("Resetting room 0");
-    await env.resetRoom(ScreepsEnvironment._roomFromIndex(0));
-    console.log("All roomObjects:", await env.getAllRoomObjects());
+    await env.resetRoom(room);
+
+    console.log("Post-reset same-tick RoomObjects:", await env.getRoomObjects(room));
     console.log(await env.tick());
 
-    console.log("Resetting room 1");
-    await env.resetRoom(ScreepsEnvironment._roomFromIndex(1));
-    console.log("All roomObjects:", await env.getAllRoomObjects());
-    console.log(await env.tick());
+    console.log("Post-reset next-tick RoomObjects:", await env.getRoomObjects(room));
+
 }
 
 async function testRoomObjects(numTicks = 10) {
@@ -91,6 +95,22 @@ async function testAddingEnv() {
     console.log(`Room objects for ${roomName}: `, await env.getRoomObjects(roomName));
 }
 
+async function testEventLogs() {
+    const room = ScreepsEnvironment._roomFromIndex(0);
+    const creepName = `Agent1_${0}:${room}`;
+    const healSelf = {[creepName]: [['heal', null]]};
+    console.log(await env.sendCommands('Agent1', JSON.stringify(healSelf)));
+    console.log(await env.tick());
+
+    console.log(`Event log for ${room}:`, await env.getEventLog(room));
+    console.log(`Clearing event log for ${room}`);
+    await env.clearEventLog(room);
+    console.log(`Event log for ${room}:`, await env.getEventLog(room));
+
+    console.log(await env.tick());
+
+}
+
 async function run() {
 
     // testRoomIndexing(20);
@@ -105,14 +125,14 @@ async function run() {
     console.log(await env.tick());
     console.log(await env.tick());
 
-    await testAddingEnv();
+    // await testAddingEnv();
 
     console.log(await env.tick());
     console.log(await env.tick());
     // await testRoomObjects();
     // await testResettingRooms();
     // await testMemoryWrite();
-
+    await testEventLogs();
     // await testChangingRoomTerrain();
 
     console.log(await env.tick());

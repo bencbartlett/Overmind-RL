@@ -215,6 +215,14 @@ class World {
 	}
 
 	/**
+     * Sets an event log for a specified room
+     */
+	async setEventLog(roomName, newLog = "[]") {
+		const {env} = await this.load();
+		return await env.hset(env.keys.ROOM_EVENT_LOG, roomName, newLog);
+	}
+
+	/**
      * Gets event logs for all rooms; returns an object indexed by room name
      */
 	async getAllEventLogs() {
