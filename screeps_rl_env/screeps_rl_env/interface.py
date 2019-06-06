@@ -41,6 +41,8 @@ class ScreepsInterface:
 
         self.all_rooms = []
 
+        self.terrain_cache = {}
+
         if use_backend:
             self.start_backend()
 
@@ -65,7 +67,8 @@ class ScreepsInterface:
         self.terrain_cache = {}
 
     def reset_room(self, room, creep_config = None):
-        # del self.terrain_cache[room]
+        if room in self.terrain_cache:
+            del self.terrain_cache[room]
         self.c.resetRoom(room, json.dumps(creep_config))
 
     def tick(self):
