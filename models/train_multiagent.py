@@ -1,23 +1,60 @@
-import argparse
+import tensorflow as tf
 
 import argparse
 
 import ray
 from ray import tune
-from ray.tune import register_env
+from ray.rllib import PolicyEvaluator
 from screeps_rl_env import ScreepsMultiAgentEnv, CreepAgent
+
+
+# def training_workflow(config, reporter):
+#
+#     # Setup policy and policy evaluation actors
+#
+#     with tf.Session() as sess:
+#         workers = [
+#             PolicyEvaluator.as_remote().remote(
+#                     lambda config: ScreepsMultiAgentEnv(config, worker_index = i, num_envs = 10),
+#                     # lambda config: ScreepsEnv(config, worker_index = i, vector_index = 0),
+#                     # lambda c: gym.make("CartPole-v0"),
+#                     PPOTFPolicy)
+#             for i in range(config["num_workers"])
+#         ]
+#
+#         # TODO: hardcoded spaces
+#         observation_space = gym.spaces.MultiDiscrete([50, 50, 50, 50])
+#         action_space = gym.spaces.Discrete(8)
+#
+#         policy = PPOTFPolicy(observation_space, action_space, {})
+#
+#         for _ in range(config["num_iters"]):
+#             # Broadcast weights to the policy evaluation workers
+#             weights = ray.put({"default_policy": policy.get_weights()})
+#             for w in workers:
+#                 w.set_weights.remote(weights)
+#
+#             # Gather a batch of samples
+#             batch = SampleBatch.concat_samples(ray.get([w.sample.remote() for w in workers]))
+#
+#             # Improve the policy using the batch
+#             policy.learn_on_batch(batch)
+#
+#             reporter(**collect_metrics(remote_evaluators = workers))
+
+
+
+
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description = "Train a model with many workers")
-    parser.add_argument("--num_machines", type = int, default = 1)
+    parser = argparse.ArgumentParser(description = "Train multi-agent model")
+    parser.add_argument("--cluster", type = bool, default = False)
     # parser.add_argument("--num_workers", type = int, default = None)
 
     args = parser.parse_args()
 
-    LOCAL_HOST_NAME = "tau"
-
-    if args.num_machines > 1:
+    if args.cluster:
         # Running on a cluster
         ray.init(redis_address = "localhost:6379")
         print("---Running on cluster---")
@@ -33,7 +70,7 @@ if __name__ == "__main__":
     creeps_player2 = [CreepAgent(2, i) for i in range(num_creeps_per_side[1])]
     agents = [*creeps_player1, *creeps_player2]
 
-    register_env("screeps_multiagent", lambda config: ScreepsMultiAgentEnv(config, agents = agents))
+    tune.register_env("screeps_multiagent", lambda config: ScreepsMultiAgentEnv(config, agents = agents))
 
     observation_space, action_space = ScreepsMultiAgentEnv.get_spaces(agents)
     policies = {
@@ -49,8 +86,8 @@ if __name__ == "__main__":
                 "env"        : "screeps_multiagent",
                 # "lr"         : grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
                 "num_gpus"   : 0,
-                "num_workers": 0,  # parallelism
-                "num_envs_per_worker": 10,
+                "num_workers": 7,  # parallelism
+                "num_envs_per_worker": 1,
                 # "remote_worker_envs": True,
                 "env_config" : {
                     "use_backend": False,
