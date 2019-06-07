@@ -137,7 +137,9 @@ class ScreepsEnvironment {
      */
     async resetRoom(roomName, creepConfig = null) {
 
-        console.log(`\n------ Resetting room ${roomName}, index ${this.index} ------\n`);
+        const gameTime = await this.server.world.gameTime;
+
+        console.log(`[${gameTime}] Resetting environment ${this.index}, room ${roomName}`);
 
         await this.deleteRoomCreeps(roomName);
 
@@ -188,7 +190,7 @@ class ScreepsEnvironment {
      */
     async resetTrainingEnvironment() {
 
-        console.log(`\n------ RESETTING TRAINING ENVIRONMENT ${this.index} ------\n`);
+        console.log(`\n===== RESETTING TRAINING ENVIRONMENT ${this.index} =====\n`);
 
         // Clear the database
         await this.server.world.reset();
@@ -313,6 +315,7 @@ class ScreepsEnvironment {
      * Triggers reset of global for all users
      */
     async triggerAllGlobalResets() {
+        console.log(`----- Triggering global resets! -----`);
     	await this.server.world.triggerGlobalReset(this.agent1);
     	await this.server.world.triggerGlobalReset(this.agent2);
     }

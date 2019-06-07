@@ -1,41 +1,9 @@
-from typing import Dict, List, Union
+from typing import Dict, Union, List
 
 from ray.rllib import BaseEnv, MultiAgentEnv
 from ray.rllib.env import EnvContext
 from ray.rllib.env.base_env import _MultiAgentEnvState
-from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface
-
-PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
-
-
-class CreepAgent:
-    """
-    Wrapper class which tracks creep properties
-    """
-
-    def __init__(self, player_index: int, creep_index: int, body: List[Dict] = None, x_init = None, y_init = None):
-        self.player_index = player_index
-        self.player_name = "Agent{}".format(player_index)
-        self.creep_index = creep_index
-        self.agent_id = "{}_{}".format(self.player_name, self.creep_index)
-        self.body = body
-        self.x_init = x_init
-        self.y_init = y_init
-
-    def get_full_name(self, room) -> str:
-        return "{}_{}:{}".format(self.player_name, self.creep_index, room)
-
-    def serialize(self) -> Dict:
-        return {
-            "player_name": self.player_name,
-            "creep_index": self.creep_index,
-            "body"       : self.body,
-            "x_init"     : self.x_init,
-            "y_init"     : self.y_init,
-        }
-
-
-DEFAULT_AGENT_CONFIG = [CreepAgent(1, 0), CreepAgent(2, 0)]
+from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent
 
 
 class ScreepsMultiAgentVectorEnv(BaseEnv):
@@ -56,7 +24,7 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.use_viewer = use_viewer
 
         if interface is None:
-            print(f"Starting new ScreepsInterface with worker_index={self.worker_index}")
+            print(f"==> Starting new ScreepsInterface with worker_index={self.worker_index} <==")
             self.interface = ScreepsInterface(self.worker_index)
         else:
             print('Using existing interface {} with worker index {}'.format(self.interface, self.worker_index))
@@ -75,6 +43,9 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         ]
         self.envs_by_room = {env.room: env for env in self.envs}
 
+        self.interface.reset()
+        self.time = self.interface.tick()
+
         self.dones = set()
         # while len(self.envs) < self.num_envs:
         #     self.envs.append(self.make_env(len(self.envs)))
@@ -83,6 +54,10 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
             assert isinstance(env, MultiAgentEnv)
 
         self.env_states = [_MultiAgentEnvState(env) for env in self.envs]
+
+    @staticmethod
+    def get_spaces(agents: List[CreepAgent]):
+        return ScreepsMultiAgentEnv.get_spaces(agents)
 
     def poll(self):
         obs, rewards, dones, infos = {}, {}, {}, {}
@@ -123,7 +98,7 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.interface.send_all_actions(all_actions)
 
         # Run the tick
-        self.interface.tick()
+        self.time = self.interface.tick()
 
         # Get all room states and set env.state for each environment
         all_states = self.interface.get_all_room_states()

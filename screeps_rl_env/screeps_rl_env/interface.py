@@ -47,20 +47,19 @@ class ScreepsInterface:
             self.start_backend()
 
     def add_env(self, vector_index):
-        print("Adding environment with vector_index {}...".format(vector_index))
         room_name = self.c.addEnv(vector_index)
-        print("Environment with vector_index {} added to room {}".format(vector_index, room_name))
+        print("Environment with vector_index {} added as room {}".format(vector_index, room_name))
         self.all_rooms.append(room_name)
         return room_name
 
     def start_backend(self):
         """Start the backend, necessary if you want to view the world with the Screeps client"""
-        print("Starting backend")
+        print("Starting backend...")
         self.c.startBackend()
 
     def reset(self):
         """Reset the server environment"""
-        print("Resetting training environment")
+        print("===== Resetting training environment =====")
         self.c.resetTrainingEnvironment()
 
         # Clear caches

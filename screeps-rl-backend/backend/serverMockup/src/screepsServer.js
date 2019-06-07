@@ -162,9 +162,9 @@ class ScreepsServer extends EventEmitter {
 		return this.processes[name];
 	}
 
-	/*
-		Start processes and connect driver.
-	*/
+	/**
+	 * Start processes and connect driver.
+	 */
 	async start() {
 
 		if (this.started) {

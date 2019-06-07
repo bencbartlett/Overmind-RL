@@ -77,12 +77,14 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         self.fig = None
 
         # Instantiate interface if one is not provided
-        if 'interface' is not None:
+        if interface is not None:
             self.interface = interface
-            print('Using existing interface {} with worker index {}'.format(self.interface, self.worker_index))
+            print('Using existing interface {} with worker_index {} and vector_index {}'.format(
+                    self.interface, self.worker_index, self.vector_index))
             self.uses_external_interface = True
         else:
-            print('Starting interface with worker index {}'.format(self.worker_index))
+            print('Starting interface with worker_index {} and vector_index {}'.format(
+                    self.worker_index, self.vector_index))
             self.interface = ScreepsInterface(self.worker_index, use_backend = self.use_backend)
             self.uses_external_interface = False
 
@@ -100,8 +102,8 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
         self.state = None
 
-        # Reset to get desired creep config
-        self.reset()
+        # # Reset to get desired creep config
+        # self.reset()
 
     @staticmethod
     def get_spaces(agents: List[CreepAgent]):
