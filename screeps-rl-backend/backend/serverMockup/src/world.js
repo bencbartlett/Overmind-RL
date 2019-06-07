@@ -341,7 +341,7 @@ class World {
 	/**
 	 * Add a new user to the world without adjusting room properties
 	 */
-	async addHeadlessBot({username, gcl = 1, cpu = 100, cpuAvailable = 10000, active = 10000, modules = {}, badgeColor = undefined}) {
+	async addHeadlessBot({username, gcl = 1, cpu = 300, cpuAvailable = 10000, active = 10000, modules = {}, badgeColor = undefined}) {
 		const {C, db, env} = await this.load();
 		// Insert user and update data
 		const user = await db.users.insert({username, cpu, cpuAvailable, gcl, active});

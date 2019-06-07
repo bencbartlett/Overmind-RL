@@ -10,7 +10,7 @@ const WORLD_WIDTH = 10; // max width of the world; must be even
 
 const RL_ACTION_SEGMENT = 70;
 
-// const OVERMIND_PATH = "../../../Overmind/dist/main.js";
+const CONFIG = require('../config.json');
 
 class ScreepsEnvironment {
 
@@ -39,6 +39,7 @@ class ScreepsEnvironment {
 
 		this.agent1 = undefined;
 		this.agent2 = undefined;
+		this.spectator = undefined;
 
 		// List of vector_index entries that correspond to new rooms
 		this.roomIndices = [];
@@ -198,8 +199,9 @@ class ScreepsEnvironment {
 		await this.server.world.reset();
 
 		// Add two players
-		const agent1 = await this.addAgent('Agent1', 'FF0000');
-		const agent2 = await this.addAgent('Agent2', '0000FF');
+		const agent1 = await this.addAgent('Agent1', '#0000ff');
+		const agent2 = await this.addAgent('Agent2', '#ff0000');
+		const spectator = await this.addSpectator();
 
 		this.agent1 = agent1;
 		this.agent2 = agent2;
@@ -219,6 +221,9 @@ class ScreepsEnvironment {
 
 	}
 
+	/**
+	 * Adds a headless bot to the world and registers console output
+	 */
 	async addAgent(username, badgeColor = undefined) {
 
 		const overmindPath = path.resolve(__dirname, '../bots/overmind.js');
@@ -255,6 +260,34 @@ class ScreepsEnvironment {
 		});
 
 		return bot;
+	}
+
+	/**
+	 * Adds an inactive spectator account with your Steam ID so that you don't have to make a new one every time
+	 * the server resets.
+	 */
+	async addSpectator() {
+		const {C, db, env} = await this.server.world.load();
+		const username = 'Muon';
+		const steam_id = CONFIG.STEAM_ID.toString();
+		const badge = {
+			type  : 11,
+			color1: '#ff0080',
+			color2: '#2f0092',
+			color3: '#2f0092',
+			param : 53,
+			flip  : false
+		};
+		const user = await db.users.insert({
+											   username     : username,
+											   usernameLower: username.toLowerCase(),
+											   steam        : {id: steam_id},
+											   badge        : badge,
+											   cpu          : 0,
+											   cpuAvailable : 0,
+											   gcl          : 0,
+											   active       : false
+										   });
 	}
 
 	async generateCreepName(agent, roomName) {

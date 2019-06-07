@@ -1,28 +1,4 @@
 {
-  "main": {
-    "token": "YOUR_TOKEN",
-    "protocol": "https",
-    "hostname": "screeps.com",
-    "port": 443,
-    "path": "/",
-    "branch": "main"
-  },
-  "sim": {
-    "token": "YOUR_TOKEN",
-    "protocol": "https",
-    "hostname": "screeps.com",
-    "port": 443,
-    "path": "/",
-    "branch": "sim"
-  },
-  "pserver": {
-    "email": "username",
-    "password": "Password",
-    "protocol": "http",
-    "hostname": "1.2.3.4",
-    "port": 21025,
-    "path": "/",
-    "branch": "main"
-  },
-  "STEAM_KEY": "B8N1AB35... Get your key at https://steamcommunity.com/dev/apikey"
+  "STEAM_KEY": "B8N1AB35... Get your key at https://steamcommunity.com/dev/apikey",
+  "STEAM_ID": "765232123... Go to your Steam profile page, and use the number in https://steamcommunity.com/profiles/XXXXX/"
 }
