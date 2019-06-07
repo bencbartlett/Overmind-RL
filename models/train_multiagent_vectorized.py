@@ -1,12 +1,11 @@
-import tensorflow as tf
+import argparse
 
 import argparse
 
 import ray
 from ray import tune
-from ray.rllib import PolicyEvaluator
-from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
 
+from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
 
 # def training_workflow(config, reporter):
 #
@@ -43,21 +42,18 @@ from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
 #             reporter(**collect_metrics(remote_evaluators = workers))
 
 
-
-
-
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description = "Train multi-agent model")
-    parser.add_argument("--cluster", type = bool, default = False)
-    parser.add_argument("--num_workers", type = int, default = 6)
-    parser.add_argument("--num_envs_per_worker", type = int, default = 10)
+    parser = argparse.ArgumentParser(description="Train multi-agent model")
+    parser.add_argument("--cluster", type=bool, default=False)
+    parser.add_argument("--num_workers", type=int, default=6)
+    parser.add_argument("--num_envs_per_worker", type=int, default=10)
 
     args = parser.parse_args()
 
     if args.cluster:
         # Running on a cluster
-        ray.init(redis_address = "localhost:6379")
+        ray.init(redis_address="localhost:6379")
         print("---Running on cluster---")
     else:
         # Running on local machine
@@ -72,7 +68,7 @@ if __name__ == "__main__":
     agents = [*creeps_player1, *creeps_player2]
 
     tune.register_env("screeps_multiagent_vectorized",
-                      lambda config: ScreepsMultiAgentVectorEnv(config, num_envs = args.num_envs_per_worker))
+                      lambda config: ScreepsMultiAgentVectorEnv(config, num_envs=args.num_envs_per_worker))
 
     observation_space, action_space = ScreepsMultiAgentVectorEnv.get_spaces(agents)
     policies = {
@@ -80,27 +76,27 @@ if __name__ == "__main__":
     }
 
     tune.run(
-            "PPO",
-            stop = {
-                "timesteps_total": 5e5,
+        "PPO",
+        stop={
+            "timesteps_total": 5e5,
+        },
+        config={
+            "env": "screeps_multiagent_vectorized",
+            # "lr"         : grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
+            "num_gpus": 0,
+            "num_workers": args.num_workers,  # parallelism
+            "num_envs_per_worker": args.num_envs_per_worker,
+            # "remote_worker_envs": True,
+            "env_config": {
+                "agents": agents,
+                "use_backend": False,
             },
-            config = {
-                "env"        : "screeps_multiagent_vectorized",
-                # "lr"         : grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
-                "num_gpus"   : 0,
-                "num_workers": args.num_workers,  # parallelism
-                "num_envs_per_worker": args.num_envs_per_worker,
-                # "remote_worker_envs": True,
-                "env_config" : {
-                    "agents": agents,
-                    "use_backend": False,
-                },
-                "multiagent" : {
-                    "policies": policies,
-                    "policy_mapping_fn": tune.function(lambda agent_id: agent_id),
-                }
-            },
-            checkpoint_freq = 100,
-            checkpoint_at_end = True,
-            queue_trials = True
+            "multiagent": {
+                "policies": policies,
+                "policy_mapping_fn": tune.function(lambda agent_id: agent_id),
+            }
+        },
+        checkpoint_freq=100,
+        checkpoint_at_end=True,
+        queue_trials=True
     )

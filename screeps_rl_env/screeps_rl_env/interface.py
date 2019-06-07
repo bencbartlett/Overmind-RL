@@ -23,7 +23,7 @@ class ScreepsInterface:
     environment. This can in turn be controlled by the ScreepsEnv gym environment.
     """
 
-    def __init__(self, worker_index, start_server = True, use_backend = False):
+    def __init__(self, worker_index, start_server=True, use_backend=False):
 
         self.index = worker_index
         self.gamePort = 21025 + 5 * worker_index
@@ -34,10 +34,10 @@ class ScreepsInterface:
             self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
             atexit.register(terminate_server_process, self.server_process)
 
-        self.c = zerorpc.Client(connect_to = "tcp://127.0.0.1:" + str(self.port),
-                                timeout = 15,
-                                heartbeat = 3,
-                                passive_heartbeat = True)
+        self.c = zerorpc.Client(connect_to="tcp://127.0.0.1:" + str(self.port),
+                                timeout=15,
+                                heartbeat=3,
+                                passive_heartbeat=True)
 
         self.all_rooms = []
 
@@ -65,7 +65,7 @@ class ScreepsInterface:
         # Clear caches
         self.terrain_cache = {}
 
-    def reset_room(self, room, creep_config = None):
+    def reset_room(self, room, creep_config=None):
         if room in self.terrain_cache:
             del self.terrain_cache[room]
         self.c.resetRoom(room, json.dumps(creep_config))
@@ -76,7 +76,7 @@ class ScreepsInterface:
         return self.c.tick()
         # print(f"Time elapsed RPC: {time() - start}")
 
-    def run(self, ticks = 100):
+    def run(self, ticks=100):
         """Run for many ticks"""
         for tick in range(ticks):
             self.tick()
@@ -95,7 +95,7 @@ class ScreepsInterface:
             return cached
         else:
             terrain_string = self.c.getRoomTerrain(room)
-            terrain = np.reshape(np.array(list(terrain_string), dtype = np.uint8), (50, 50))
+            terrain = np.reshape(np.array(list(terrain_string), dtype=np.uint8), (50, 50))
             self.terrain_cache[room] = terrain
             return terrain
 
@@ -110,7 +110,7 @@ class ScreepsInterface:
             all_terrain[room] = self._get_room_terrian(room)
         return all_terrain
 
-    def _get_room_objects(self, room = ROOM):
+    def _get_room_objects(self, room=ROOM):
         """
         Get a list of all room objects in the room. Each object is a JSON-style dictionary
         :param room: the room name to fetch
@@ -126,7 +126,7 @@ class ScreepsInterface:
         """
         return self.c.getAllRoomObjects()
 
-    def _get_room_event_log(self, room = ROOM):
+    def _get_room_event_log(self, room=ROOM):
         """
         Gets the event log for a room, describing the events that happened on previous tick
         :param room: the room name to fetch
@@ -148,9 +148,9 @@ class ScreepsInterface:
         :return: dictionary of terrain, roomObjects, eventLog
         """
         return {
-            "terrain"    : self._get_room_terrian(room),
+            "terrain": self._get_room_terrian(room),
             "roomObjects": self._get_room_objects(room),
-            "eventLog"   : self._get_room_event_log(room)
+            "eventLog": self._get_room_event_log(room)
         }
 
     def get_all_room_states(self):
@@ -164,9 +164,9 @@ class ScreepsInterface:
 
         return {
             room: {
-                "terrain"    : terrain[room],
+                "terrain": terrain[room],
                 "roomObjects": room_objects[room],
-                "eventLog"   : event_logs[room]
+                "eventLog": event_logs[room]
             } for room in self.all_rooms
         }
 

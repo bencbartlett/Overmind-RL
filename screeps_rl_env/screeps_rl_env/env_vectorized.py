@@ -7,10 +7,10 @@ from screeps_rl_env.interface import ScreepsInterface
 class ScreepsVectorEnv(VectorEnv):
 
     def __init__(self,
-                 env_config = None,
-                 num_envs = 10,
-                 worker_index = None,
-                 use_backend = False):
+                 env_config=None,
+                 num_envs=10,
+                 worker_index=None,
+                 use_backend=False):
 
         print("ENV_CONFIG:")
         print(env_config)
@@ -22,17 +22,17 @@ class ScreepsVectorEnv(VectorEnv):
         self.worker_index = worker_index if worker_index is not None else env_config.worker_index
 
         print('Starting interface with worker index {}'.format(self.worker_index))
-        self.interface = ScreepsInterface(self.worker_index, use_backend = use_backend)
+        self.interface = ScreepsInterface(self.worker_index, use_backend=use_backend)
 
         self.num_envs = num_envs
 
         self.envs = []
         for vector_index in range(num_envs):
-            self.envs.append(ScreepsEnv(env_config = env_config,
-                                        worker_index = worker_index,
-                                        vector_index = vector_index,
-                                        interface = self.interface,
-                                        use_backend = use_backend))
+            self.envs.append(ScreepsEnv(env_config=env_config,
+                                        worker_index=worker_index,
+                                        vector_index=vector_index,
+                                        interface=self.interface,
+                                        use_backend=use_backend))
 
         self.observation_space = self.envs[0].observation_space
         self.action_space = self.envs[0].action_space

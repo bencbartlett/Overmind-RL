@@ -5,6 +5,7 @@ import gym
 import matplotlib.pyplot as plt
 import numpy as np
 from ray.rllib.env import EnvContext
+
 from screeps_rl_env.interface import ScreepsInterface
 from screeps_rl_env.processors import ApproachProcessor, ScreepsProcessor
 
@@ -36,7 +37,7 @@ class ScreepsEnv(gym.Env):
 
         if interface is None:
             print('starting interface with worker index {}'.format(self.worker_index))
-            self.interface = ScreepsInterface(self.worker_index, use_backend = self.use_backend)
+            self.interface = ScreepsInterface(self.worker_index, use_backend=self.use_backend)
             self.uses_external_interface = False
         else:
             self.interface = interface
@@ -106,7 +107,7 @@ class ScreepsEnv(gym.Env):
     def reset_soft(self):
         self.interface.reset_room(self.room)
 
-    def render(self, mode = 'human'):
+    def render(self, mode='human'):
 
         if mode == 'human':
             if not self.use_backend:
@@ -119,7 +120,7 @@ class ScreepsEnv(gym.Env):
             sleep(sleep_time)
 
         elif mode == 'rgb_array':
-            arr = np.zeros((50, 50, 3), dtype = int)
+            arr = np.zeros((50, 50, 3), dtype=int)
             if self.state is None:
                 return arr
             terrain = self.state["terrain"]
@@ -153,14 +154,14 @@ class ScreepsEnv(gym.Env):
 
             if self.use_viewer:
                 if self.fig is None:
-                    self.fig = plt.figure(figsize = (5, 5))
+                    self.fig = plt.figure(figsize=(5, 5))
                 # self.viewer.imshow(arr)
                 plt.imshow(arr)
                 plt.pause(0.05)
 
             return arr
 
-    def seed(self, seed = None):
+    def seed(self, seed=None):
         pass  # TODO: do we need this?
 
     def close(self):

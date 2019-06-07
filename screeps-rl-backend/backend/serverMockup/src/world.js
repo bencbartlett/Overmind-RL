@@ -170,7 +170,7 @@ class World {
 	/**
 	 * Delete all creeps within a room
 	 */
-	async deleteRoomCreeps(roomName, deleteTombstones=true) {
+	async deleteRoomCreeps(roomName, deleteTombstones = true) {
 		const {db} = await this.load();
 		if (deleteTombstones) {
 			await db['rooms.objects'].removeWhere({room: roomName, type: 'tombstone'});
@@ -197,7 +197,7 @@ class World {
 	/**
 	 * Get a list of creeps in the requested roomName
 	 */
-	async getRoomCreeps(roomName, playerID=undefined) {
+	async getRoomCreeps(roomName, playerID = undefined) {
 		const {db} = await this.load();
 		if (playerID) {
 			return await db['rooms.objects'].find({room: roomName, type: 'creep', user: playerID});
@@ -207,24 +207,24 @@ class World {
 	}
 
 	/**
-     * Gets an event log for a specified room
-     */
+	 * Gets an event log for a specified room
+	 */
 	async getEventLog(roomName) {
 		const {env} = await this.load();
 		return await env.hget(env.keys.ROOM_EVENT_LOG, roomName);
 	}
 
 	/**
-     * Sets an event log for a specified room
-     */
-	async setEventLog(roomName, newLog = "[]") {
+	 * Sets an event log for a specified room
+	 */
+	async setEventLog(roomName, newLog = '[]') {
 		const {env} = await this.load();
 		return await env.hset(env.keys.ROOM_EVENT_LOG, roomName, newLog);
 	}
 
 	/**
-     * Gets event logs for all rooms; returns an object indexed by room name
-     */
+	 * Gets event logs for all rooms; returns an object indexed by room name
+	 */
 	async getAllEventLogs() {
 		const {env} = await this.load();
 		return await env.get(env.keys.ROOM_EVENT_LOG);
@@ -253,20 +253,20 @@ class World {
 		// Insert basic room data
 		await Promise.all([
 							  db.users.insert({
-												  _id: '2',
-												  username: 'Invader',
-												  cpu: 100,
+												  _id         : '2',
+												  username    : 'Invader',
+												  cpu         : 100,
 												  cpuAvailable: 10000,
-												  gcl: 13966610.2,
-												  active: 0
+												  gcl         : 13966610.2,
+												  active      : 0
 											  }),
 							  db.users.insert({
-												  _id: '3',
-												  username: 'Source Keeper',
-												  cpu: 100,
+												  _id         : '3',
+												  username    : 'Source Keeper',
+												  cpu         : 100,
 												  cpuAvailable: 10000,
-												  gcl: 13966610.2,
-												  active: 0
+												  gcl         : 13966610.2,
+												  active      : 0
 											  })
 						  ]);
 	}
@@ -312,25 +312,25 @@ class World {
 							  db['users.code'].insert({user: user._id, branch: 'default', modules, activeWorld: true}),
 							  db['rooms.objects'].update({room, type: 'controller'}, {
 								  $set: {
-									  user: user._id,
-									  level: 1,
-									  progress: 0,
+									  user         : user._id,
+									  level        : 1,
+									  progress     : 0,
 									  downgradeTime: null,
-									  safeMode: 20000
+									  safeMode     : 20000
 								  }
 							  }),
 							  db['rooms.objects'].insert({
 															 room,
-															 type: 'spawn',
+															 type              : 'spawn',
 															 x,
 															 y,
-															 user: user._id,
-															 name: spawnName,
-															 energy: C.SPAWN_ENERGY_START,
-															 energyCapacity: C.SPAWN_ENERGY_CAPACITY,
-															 hits: C.SPAWN_HITS,
-															 hitsMax: C.SPAWN_HITS,
-															 spawning: null,
+															 user              : user._id,
+															 name              : spawnName,
+															 energy            : C.SPAWN_ENERGY_START,
+															 energyCapacity    : C.SPAWN_ENERGY_CAPACITY,
+															 hits              : C.SPAWN_HITS,
+															 hitsMax           : C.SPAWN_HITS,
+															 spawning          : null,
 															 notifyWhenAttacked: true
 														 }),
 						  ]);
@@ -350,12 +350,12 @@ class World {
 			await db.users.update({username: username}, {
 				$set: {
 					badge: {
-						type: 1,
+						type  : 1,
 						color1: badgeColor,
 						color2: badgeColor,
 						color3: badgeColor,
-						param: 0,
-						flip: false
+						param : 0,
+						flip  : false
 					}
 				}
 			});
@@ -370,16 +370,16 @@ class World {
 	}
 
 	/**
-     * Triggers reset of global for a user
-     */
-    async triggerGlobalReset(user) {
-    	const {C, db, env} = await this.load();
-    	await db['users.code'].update({user: user._id, branch: 'default'}, {
-            $set: {
-                timestamp: new Date().getTime()
-            }
-        });
-    }
+	 * Triggers reset of global for a user
+	 */
+	async triggerGlobalReset(user) {
+		const {C, db, env} = await this.load();
+		await db['users.code'].update({user: user._id, branch: 'default'}, {
+			$set: {
+				timestamp: new Date().getTime()
+			}
+		});
+	}
 
 	async updateEnvTerrain(db, env) {
 		let walled = '';

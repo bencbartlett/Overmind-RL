@@ -39,10 +39,10 @@ class ScreepsServer extends EventEmitter {
 	setOpts(opts = {}) {
 		// Assign options
 		this.opts = Object.assign({
-									  path: path.resolve('server'),
-									  logdir: path.resolve('server', 'logs'),
+									  path     : path.resolve('server'),
+									  logdir   : path.resolve('server', 'logs'),
 									  assetsDir: path.resolve('server', 'assets'),
-									  port: 21025,
+									  port     : 21025,
 								  }, opts);
 		this.opts.cliPort = this.opts.port + 1;
 		this.opts.storagePort = this.opts.port + 2;
@@ -85,16 +85,16 @@ class ScreepsServer extends EventEmitter {
 		this.emit('info', 'Starting storage process.');
 		const library = path.resolve(path.dirname(require.resolve('@screeps/storage')), '../bin/start.js');
 		const process = await this.startProcess('storage', library, {
-			DB_PATH: path.resolve(this.opts.path, DB_FILE),
-			MODFILE: path.resolve(this.opts.path, MOD_FILE),
-			GAME_PORT: this.opts.port,
-			CLI_PORT: this.opts.cliPort,
-			STORAGE_PORT: this.opts.storagePort,
+			DB_PATH      : path.resolve(this.opts.path, DB_FILE),
+			MODFILE      : path.resolve(this.opts.path, MOD_FILE),
+			GAME_PORT    : this.opts.port,
+			CLI_PORT     : this.opts.cliPort,
+			STORAGE_PORT : this.opts.storagePort,
 			DRIVER_MODULE: '@screeps/driver',
-			STEAM_KEY: CONFIG.STEAM_KEY,
-			GAME_HOST: '127.0.0.1',
-			CLI_HOST: '127.0.0.1',
-			ASSET_DIR: this.opts.assetsDir
+			STEAM_KEY    : CONFIG.STEAM_KEY,
+			GAME_HOST    : '127.0.0.1',
+			CLI_HOST     : '127.0.0.1',
+			ASSET_DIR    : this.opts.assetsDir
 		});
 		await new Promise((resolve, reject) => {
 			const timeout = setTimeout(() => reject(new Error('Could not launch the storage process (timeout).')), 5000);
@@ -180,25 +180,25 @@ class ScreepsServer extends EventEmitter {
 		this.emit('info', 'Starting engine processes.');
 		this.startProcess('engine_runner', path.resolve(path.dirname(require.resolve('@screeps/engine')), 'runner.js'), {
 			DRIVER_MODULE: '@screeps/driver',
-			MODFILE: path.resolve(this.opts.path, DB_FILE),
-			GAME_PORT: this.opts.port,
-			CLI_PORT: this.opts.cliPort,
-			STORAGE_PORT: this.opts.storagePort,
-			STEAM_KEY: CONFIG.STEAM_KEY,
-			GAME_HOST: '127.0.0.1',
-			CLI_HOST: '127.0.0.1',
-			ASSET_DIR: this.opts.assetsDir
+			MODFILE      : path.resolve(this.opts.path, DB_FILE),
+			GAME_PORT    : this.opts.port,
+			CLI_PORT     : this.opts.cliPort,
+			STORAGE_PORT : this.opts.storagePort,
+			STEAM_KEY    : CONFIG.STEAM_KEY,
+			GAME_HOST    : '127.0.0.1',
+			CLI_HOST     : '127.0.0.1',
+			ASSET_DIR    : this.opts.assetsDir
 		});
 		this.startProcess('engine_processor', path.resolve(path.dirname(require.resolve('@screeps/engine')), 'processor.js'), {
 			DRIVER_MODULE: '@screeps/driver',
-			MODFILE: path.resolve(this.opts.path, DB_FILE),
-			GAME_PORT: this.opts.port,
-			CLI_PORT: this.opts.cliPort,
-			STORAGE_PORT: this.opts.storagePort,
-			STEAM_KEY: CONFIG.STEAM_KEY,
-			GAME_HOST: '127.0.0.1',
-			CLI_HOST: '127.0.0.1',
-			ASSET_DIR: this.opts.assetsDir
+			MODFILE      : path.resolve(this.opts.path, DB_FILE),
+			GAME_PORT    : this.opts.port,
+			CLI_PORT     : this.opts.cliPort,
+			STORAGE_PORT : this.opts.storagePort,
+			STEAM_KEY    : CONFIG.STEAM_KEY,
+			GAME_HOST    : '127.0.0.1',
+			CLI_HOST     : '127.0.0.1',
+			ASSET_DIR    : this.opts.assetsDir
 		});
 
 		this.started = true;
@@ -210,14 +210,14 @@ class ScreepsServer extends EventEmitter {
 
 		this.startProcess('backend_local', path.resolve(path.dirname(require.resolve('@screeps/backend')), '../bin/start.js'), {
 			DRIVER_MODULE: '@screeps/driver',
-			MODFILE: path.resolve(this.opts.path, DB_FILE),
-			GAME_PORT: this.opts.port,
-			CLI_PORT: this.opts.cliPort,
-			STORAGE_PORT: this.opts.storagePort,
-			STEAM_KEY: CONFIG.STEAM_KEY,
-			GAME_HOST: '127.0.0.1',
-			CLI_HOST: '127.0.0.1',
-			ASSET_DIR: this.opts.assetsDir
+			MODFILE      : path.resolve(this.opts.path, DB_FILE),
+			GAME_PORT    : this.opts.port,
+			CLI_PORT     : this.opts.cliPort,
+			STORAGE_PORT : this.opts.storagePort,
+			STEAM_KEY    : CONFIG.STEAM_KEY,
+			GAME_HOST    : '127.0.0.1',
+			CLI_HOST     : '127.0.0.1',
+			ASSET_DIR    : this.opts.assetsDir
 		});
 		return this;
 
@@ -228,11 +228,11 @@ class ScreepsServer extends EventEmitter {
 	 */
 	stop() {
 		const toKill = _.compact([
-			this.processes['engine_runner'],
-			this.processes['engine_processor'],
-			this.processes['backend_local']
-		]);
-		_.forEach(toKill, process=>process.kill());
+									 this.processes['engine_runner'],
+									 this.processes['engine_processor'],
+									 this.processes['backend_local']
+								 ]);
+		_.forEach(toKill, process => process.kill());
 		this.started = false;
 		return this;
 	}

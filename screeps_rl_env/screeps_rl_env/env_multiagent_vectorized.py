@@ -3,6 +3,7 @@ from typing import Dict, Union, List
 from ray.rllib import BaseEnv, MultiAgentEnv
 from ray.rllib.env import EnvContext
 from ray.rllib.env.base_env import _MultiAgentEnvState
+
 from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent
 
 
@@ -37,11 +38,11 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.num_envs = num_envs
         self.envs = [
             ScreepsMultiAgentEnv(env_config,
-                                 worker_index = self.worker_index,
-                                 vector_index = i,
-                                 interface = self.interface,
-                                 use_backend = self.use_backend,
-                                 use_viewer = self.use_viewer)
+                                 worker_index=self.worker_index,
+                                 vector_index=i,
+                                 interface=self.interface,
+                                 use_backend=self.use_backend,
+                                 use_viewer=self.use_viewer)
             for i in range(self.num_envs)
         ]
         self.envs_by_room = {env.room: env for env in self.envs}

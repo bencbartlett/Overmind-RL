@@ -1,11 +1,11 @@
-(async function () {
+(async function() {
 	const _ = require('lodash');
 	const fs = require('fs');
 	const path = require('path');
 	const {ScreepsServer, TerrainMatrix} = require('../src/main.js');
 
 	// print process.argv
-	process.argv.forEach(function (val, index, array) {
+	process.argv.forEach(function(val, index, array) {
 		console.log(index + ': ' + val);
 	});
 
@@ -14,9 +14,9 @@
 
 	const serverIndex = parseInt(process.argv[2], 10) || 0; // node /path/to/test.js 3 <- creates a third server instance
 	const opts = {
-		path: path.resolve(appDir, '../../servers', `server${serverIndex}`),
-		logdir: path.resolve(appDir, '../../servers', `server${serverIndex}`, 'logs'),
-		port: 21025 + serverIndex,
+		path   : path.resolve(appDir, '../../servers', `server${serverIndex}`),
+		logdir : path.resolve(appDir, '../../servers', `server${serverIndex}`, 'logs'),
+		port   : 21025 + serverIndex,
 		modfile: path.resolve(appDir, '../serverMockup/assets/mods.json')
 	};
 	console.log('opts: ' + JSON.stringify(opts));
@@ -41,13 +41,13 @@
 		await server.world.setTerrain('W0N1', terrain);
 		await server.world.addRoomObject('W0N1', 'controller', 10, 10, {level: 0});
 		await server.world.addRoomObject('W0N1', 'source', 10, 40, {
-			energy: 1000,
-			energyCapacity: 1000,
+			energy             : 1000,
+			energyCapacity     : 1000,
 			ticksToRegeneration: 300
 		});
 		await server.world.addRoomObject('W0N1', 'mineral', 40, 40, {
-			mineralType: 'H',
-			density: 3,
+			mineralType  : 'H',
+			density      : 3,
 			mineralAmount: 3000
 		});
 

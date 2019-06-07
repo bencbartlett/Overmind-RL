@@ -2,7 +2,9 @@ import unittest
 from time import time
 
 import numpy as np
-from screeps_rl_env import ScreepsEnv, ScreepsVectorEnv, ScreepsMultiAgentEnv, CreepAgent, ScreepsMultiAgentVectorEnv, ScreepsInterface
+
+from screeps_rl_env import ScreepsEnv, ScreepsVectorEnv, ScreepsMultiAgentEnv, CreepAgent, ScreepsMultiAgentVectorEnv, \
+    ScreepsInterface
 
 
 class TestScreepsEnv(unittest.TestCase):
@@ -28,7 +30,7 @@ class TestScreepsEnv(unittest.TestCase):
 
     def test_ScreepsEnv(self):
         print("\n\n\nTesting ScreepsEnv...")
-        env = ScreepsEnv({}, worker_index = 0, vector_index = 0)
+        env = ScreepsEnv({}, worker_index=0, vector_index=0)
         env.reset()
 
         for tick in range(20):
@@ -38,9 +40,9 @@ class TestScreepsEnv(unittest.TestCase):
 
         env.close()
 
-    def test_ScreepsVectorEnv(self, num_envs = 3):
+    def test_ScreepsVectorEnv(self, num_envs=3):
         print("\n\n\nTesting ScreepsVectorEnv...")
-        env = ScreepsVectorEnv({}, worker_index = 0, num_envs = num_envs)
+        env = ScreepsVectorEnv({}, worker_index=0, num_envs=num_envs)
         env.vector_reset()
 
         for tick in range(20):
@@ -60,7 +62,7 @@ class TestScreepsEnv(unittest.TestCase):
 
     def test_ScreepsMultiAgentEnv(self):
         agents = [CreepAgent(1, 0), CreepAgent(2, 0)]
-        env = ScreepsMultiAgentEnv({'agents': agents}, worker_index = 0, vector_index = 0)
+        env = ScreepsMultiAgentEnv({'agents': agents}, worker_index=0, vector_index=0)
         env.reset()
 
         for tick in range(20):
@@ -72,7 +74,7 @@ class TestScreepsEnv(unittest.TestCase):
 
     def test_ScreepsMultiAgentVectorEnv(self):
         agents = [CreepAgent(1, 0), CreepAgent(2, 0)]
-        env = ScreepsMultiAgentVectorEnv({'agents': agents}, num_envs = 5)
+        env = ScreepsMultiAgentVectorEnv({'agents': agents}, num_envs=5)
         for sub_env in env.envs:
             sub_env.reset()
 
@@ -86,7 +88,7 @@ class TestScreepsEnv(unittest.TestCase):
 
         env.close()
 
-    def test_SpeedComparison(self, num_ticks = 100, num_envs = 20):
+    def test_SpeedComparison(self, num_ticks=100, num_envs=20):
 
         print("\n\n\nTesting speed comparison...")
 
@@ -94,7 +96,7 @@ class TestScreepsEnv(unittest.TestCase):
         tick_times_vector = []
 
         # Single environment
-        env = ScreepsEnv({}, worker_index = 0, vector_index = 0)
+        env = ScreepsEnv({}, worker_index=0, vector_index=0)
         env.reset()
         for tick in range(num_ticks):
             start = time()
@@ -104,7 +106,7 @@ class TestScreepsEnv(unittest.TestCase):
         env.close()
 
         # Vector environment
-        env = ScreepsVectorEnv({}, worker_index = 0, num_envs = num_envs)
+        env = ScreepsVectorEnv({}, worker_index=0, num_envs=num_envs)
         env.vector_reset()
         for tick in range(num_ticks):
             start = time()

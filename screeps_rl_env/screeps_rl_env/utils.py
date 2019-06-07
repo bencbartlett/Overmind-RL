@@ -1,6 +1,7 @@
 import psutil
 
-def kill_backend_processes(server_index, verbose = True):
+
+def kill_backend_processes(server_index, verbose=True):
     def on_terminate(proc):
         if verbose: print("Process {} terminated with exit code {}".format(proc, proc.returncode))
 
@@ -16,12 +17,12 @@ def kill_backend_processes(server_index, verbose = True):
             kill_pids.append(conn.pid)
 
     print("Killing processes with pids {}".format(kill_pids))
-    processes = [psutil.Process(pid = pid) for pid in kill_pids]
+    processes = [psutil.Process(pid=pid) for pid in kill_pids]
 
     for pid in kill_pids:
-        process = psutil.Process(pid = pid)
+        process = psutil.Process(pid=pid)
         process.kill()
 
-    dead, alive = psutil.wait_procs(processes, timeout = 3, callback = on_terminate)
+    dead, alive = psutil.wait_procs(processes, timeout=3, callback=on_terminate)
     if verbose: print("Terminated processes: ", dead)
     if verbose: print("Remaining processes: ", alive)

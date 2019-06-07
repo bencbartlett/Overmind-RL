@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ray.rllib import MultiAgentEnv
 from ray.rllib.env import EnvContext
+
 from screeps_rl_env.interface import ScreepsInterface
 from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor, ApproachMultiAgentProcessor
 
@@ -17,7 +18,7 @@ class CreepAgent:
     Wrapper class which tracks creep properties
     """
 
-    def __init__(self, player_index: int, creep_index: int, body: List[Dict] = None, x_init = None, y_init = None):
+    def __init__(self, player_index: int, creep_index: int, body: List[Dict] = None, x_init=None, y_init=None):
         self.player_index = player_index
         self.player_name = "Agent{}".format(player_index)
         self.creep_index = creep_index
@@ -33,9 +34,9 @@ class CreepAgent:
         return {
             "player_name": self.player_name,
             "creep_index": self.creep_index,
-            "body"       : self.body,
-            "x_init"     : self.x_init,
-            "y_init"     : self.y_init,
+            "body": self.body,
+            "x_init": self.x_init,
+            "y_init": self.y_init,
         }
 
 
@@ -80,12 +81,12 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         if interface is not None:
             self.interface = interface
             print('Using existing interface {} with worker_index {} and vector_index {}'.format(
-                    self.interface, self.worker_index, self.vector_index))
+                self.interface, self.worker_index, self.vector_index))
             self.uses_external_interface = True
         else:
             print('Starting interface with worker_index {} and vector_index {}'.format(
-                    self.worker_index, self.vector_index))
-            self.interface = ScreepsInterface(self.worker_index, use_backend = self.use_backend)
+                self.worker_index, self.vector_index))
+            self.interface = ScreepsInterface(self.worker_index, use_backend=self.use_backend)
             self.uses_external_interface = False
 
         # Request a new mini-environment from the screeps interface. Returns a reference to the environment's room name
@@ -104,7 +105,6 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
         # TODO: hardcoded
         self.observation_space, self.action_space = ScreepsMultiAgentEnv.get_spaces(self.agents)
-
 
         # # Reset to get desired creep config
         # self.reset()
@@ -186,7 +186,7 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
         return self.step_post_tick(action_dict, self.state)
 
-    def render(self, mode = None):
+    def render(self, mode=None):
 
         mode = 'human' if self.use_backend else 'rgb_array'
 
@@ -201,7 +201,7 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
             sleep(sleep_time)
 
         elif mode == 'rgb_array':
-            arr = np.zeros((50, 50, 3), dtype = int)
+            arr = np.zeros((50, 50, 3), dtype=int)
             if self.state is None:
                 return arr
             terrain = self.state["terrain"]
@@ -235,14 +235,14 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
             if self.use_viewer:
                 if self.fig is None:
-                    self.fig = plt.figure(figsize = (5, 5))
+                    self.fig = plt.figure(figsize=(5, 5))
                 # self.viewer.imshow(arr)
                 plt.imshow(arr)
                 plt.pause(0.05)
 
             return arr
 
-    def seed(self, seed = None):
+    def seed(self, seed=None):
         pass  # TODO: do we need this?
 
     def close(self):

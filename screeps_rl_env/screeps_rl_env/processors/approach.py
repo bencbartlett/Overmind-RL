@@ -1,4 +1,5 @@
 import numpy as np
+
 from screeps_rl_env.processors import ScreepsProcessor
 
 
@@ -28,7 +29,7 @@ class ApproachProcessor(ScreepsProcessor):
         else:
             return None  # TODO: placeholder
 
-    def process_action(self, action, creep_id = 0):
+    def process_action(self, action, creep_id=0):
         creep_name = "Agent1_{}:{}".format(creep_id, self.env.room)
         return {creep_name: [["move", int(action) + 1]]}
 
