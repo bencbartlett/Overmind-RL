@@ -131,8 +131,8 @@ async function run() {
     console.log(await env.tick());
     // await testRoomObjects();
     // await testResettingRooms();
-    // await testMemoryWrite();
-    await testEventLogs();
+    await testMemoryWrite();
+    // await testEventLogs();
     // await testChangingRoomTerrain();
 
     console.log(await env.tick());

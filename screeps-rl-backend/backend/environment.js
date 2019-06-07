@@ -235,7 +235,7 @@ class ScreepsEnvironment {
 		            RawMemory.segments[71] = {test: Game.time};
 		        }
 		        console.log('Memory ', JSON.stringify(Memory));
-		        console.log('Segment 70: ', RawMemory.segments[70]);
+		        console.log('Segment 70: ', JSON.stringify(RawMemory.segments[70]));
 		        console.log('Segment 71: ', RawMemory.segments[71]);
 		        console.log('Shard: ', Game.shard.name);
 		        _.each(Game.creeps, c => c.move(_.sample(directions)));
@@ -360,14 +360,13 @@ class ScreepsEnvironment {
 
     /**
      * Set the contents of a user's memory segment
-     * TODO: this is broken and I don't know why; use setMemory() instead
      */
     async setMemorySegment(username, segment, contents) {
         const {db, env} = await this.server.world.load();
         const {_id} = await db.users.findOne({username: username});
         console.log(`Setting user ${username} with id ${_id} segment ${segment} to ${contents}`);
-        await env.hset(env.keys.MEMORY_SEGMENT + _id, segment, contents);
-        const seg = await env.hget(env.keys.MEMORY_SEGMENT + _id, segment);
+        await env.hset(env.keys.MEMORY_SEGMENTS + _id, segment, contents);
+        const seg = await env.hget(env.keys.MEMORY_SEGMENTS + _id, segment);
         console.log(`Segment: ${seg}`)
     }
 
