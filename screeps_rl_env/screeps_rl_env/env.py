@@ -9,8 +9,6 @@ from ray.rllib.env import EnvContext
 from screeps_rl_env.interface import ScreepsInterface
 from screeps_rl_env.processors import ApproachProcessor, ScreepsProcessor
 
-PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
-
 
 class ScreepsEnv(gym.Env):
 

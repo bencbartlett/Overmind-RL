@@ -252,7 +252,13 @@ class ScreepsEnvironment {
 			main: script,
 		};
 
-		const bot = await this.server.world.addHeadlessBot({username, modules, badgeColor});
+		const memory = {
+			reinforcementLearning: {
+				enabled  : true,
+				verbosity: 1,
+			}
+		};
+		const bot = await this.server.world.addHeadlessBot({username, modules, badgeColor, memory});
 
 		// Print console logs every tick
 		bot.on('console', (logs, results, userid, username) => {
@@ -423,9 +429,8 @@ class ScreepsEnvironment {
 	async sendCommands(username, contents) {
 		// const rlObjectStringified = '{"reinforcementLearning":' + contents + '}';
 		// await this.setMemory(username, rlObjectStringified);
-		const gameTime = await this.server.world.gameTime;
-
-		console.log(`[${gameTime}] Sending commands to ${username}: ${contents}`);
+		// const gameTime = await this.server.world.gameTime;
+		// console.log(`[${gameTime}] Sending commands to ${username}: ${contents}`);
 		await this.setMemorySegment(username, RL_ACTION_SEGMENT, contents);
 	}
 

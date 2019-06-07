@@ -555,6 +555,17 @@ function hasJustSpawned() {
 function onPublicServer() {
     return Game.shard.name.includes('shard');
 }
+function onTrainingEnvironment() {
+    return !!Memory.reinforcementLearning && !!Memory.reinforcementLearning.enabled;
+}
+function getReinforcementLearningTrainingVerbosity() {
+    if (Memory.reinforcementLearning) {
+        if (Memory.reinforcementLearning.verbosity != undefined) {
+            return Memory.reinforcementLearning.verbosity;
+        }
+    }
+    return 0;
+}
 function bulleted(text, aligned = true, startWithNewLine = true) {
     if (text.length == 0) {
         return '';
@@ -813,14 +824,14 @@ const GUI_SCALE = 1.0;
  * communicated to them from the RL model through memory.
  * WARNING: enabling RL_TRAINING_MODE will wipe the contents of your memory!
  */
-const RL_TRAINING_MODE = true;
+const RL_TRAINING_MODE = onTrainingEnvironment();
 /**
  * Configure how much stuff gets logged to console
  * 0: no logging
  * 1: log every 100th, 101th tick
  * 2: log every tick
  */
-const RL_TRAINING_VERBOSITY = 2;
+const RL_TRAINING_VERBOSITY = getReinforcementLearningTrainingVerbosity();
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -26558,10 +26569,6 @@ class ActionParser {
      * Read action commands from the designated memory segment, parse them, and run them
      */
     static run() {
-        // Parse actions
-        // if (Memory.reinforcementLearning) {
-        //  ActionParser.parseActions(Memory.reinforcementLearning);
-        // }
         const raw = RawMemory.segments[RL_ACTION_SEGMENT];
         if (raw != undefined && raw != '') {
             const actions = JSON.parse(raw);
@@ -26580,8 +26587,6 @@ class ActionParser {
         else if (RL_TRAINING_VERBOSITY == 2) {
             this.logState(raw);
         }
-        // Clear reinforcementLearning block when done
-        Memory.reinforcementLearning = {};
     }
 }
 

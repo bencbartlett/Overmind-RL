@@ -341,7 +341,16 @@ class World {
 	/**
 	 * Add a new user to the world without adjusting room properties
 	 */
-	async addHeadlessBot({username, gcl = 1, cpu = 300, cpuAvailable = 10000, active = 10000, modules = {}, badgeColor = undefined}) {
+	async addHeadlessBot({
+							 username,
+							 gcl = 1,
+							 cpu = 300,
+							 cpuAvailable = 10000,
+							 active = 10000,
+							 modules = {},
+							 badgeColor = undefined,
+							 memory = {},
+						 }) {
 		const {C, db, env} = await this.load();
 		// Insert user and update data
 		const user = await db.users.insert({username, cpu, cpuAvailable, gcl, active});
@@ -362,7 +371,7 @@ class World {
 		}
 
 		await Promise.all([
-							  env.set(env.keys.MEMORY + user._id, '{}'),
+							  env.set(env.keys.MEMORY + user._id, JSON.stringify(memory)),
 							  db['users.code'].insert({user: user._id, branch: 'default', modules, activeWorld: true}),
 						  ]);
 		// Subscribe to console notificaiton and return emitter
