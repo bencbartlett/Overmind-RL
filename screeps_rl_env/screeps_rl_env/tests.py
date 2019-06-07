@@ -2,7 +2,7 @@ import unittest
 from time import time
 
 import numpy as np
-from screeps_rl_env import ScreepsEnv, ScreepsVectorEnv, ScreepsInterface
+from screeps_rl_env import ScreepsEnv, ScreepsVectorEnv, ScreepsMultiAgentEnv, CreepAgent, ScreepsMultiAgentVectorEnv, ScreepsInterface
 
 
 class TestScreepsEnv(unittest.TestCase):
@@ -55,6 +55,34 @@ class TestScreepsEnv(unittest.TestCase):
             actions = [tick % 8] * num_envs
             obs, rewards, dones, infos = env.vector_step(actions)
             print(obs, rewards, dones, infos)
+
+        env.close()
+
+    def test_ScreepsMultiAgentEnv(self):
+        agents = [CreepAgent(1, 0), CreepAgent(2, 0)]
+        env = ScreepsMultiAgentEnv({'agents': agents}, worker_index = 0, vector_index = 0)
+        env.reset()
+
+        for tick in range(20):
+            action = tick % 8
+            action_dict = {creep.agent_id: action for creep in agents}
+            print(env.step(action_dict))
+
+        env.close()
+
+    def test_ScreepsMultiAgentVectorEnv(self):
+        agents = [CreepAgent(1, 0), CreepAgent(2, 0)]
+        env = ScreepsMultiAgentVectorEnv({'agents': agents}, num_envs = 5)
+        for sub_env in env.envs:
+            sub_env.reset()
+
+        for tick in range(20):
+            action = tick % 8
+            action_dict = {creep.agent_id: action for creep in agents}
+            all_dict = {index: action_dict for index in range(len(env.envs))}
+
+            env.send_actions(all_dict)
+            print(env.poll())
 
         env.close()
 

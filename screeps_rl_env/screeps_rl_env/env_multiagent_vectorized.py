@@ -15,7 +15,10 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
                  use_backend: bool = False,
                  use_viewer: bool = False):
 
-        self.worker_index = env_config.worker_index
+        if isinstance(env_config, EnvContext):
+            self.worker_index = env_config.worker_index
+        else:
+            self.worker_index = env_config['worker_index'] if 'worker_index' in env_config else 0
 
         # Backend initialization, usually ignored
         self.use_backend = use_backend
@@ -43,12 +46,12 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         ]
         self.envs_by_room = {env.room: env for env in self.envs}
 
+        # Perform a hard reset and allow two ticks for scripts to initialize
         self.interface.reset()
-        self.time = self.interface.tick()
+        for _ in range(2):
+            self.time = self.interface.tick()
 
         self.dones = set()
-        # while len(self.envs) < self.num_envs:
-        #     self.envs.append(self.make_env(len(self.envs)))
 
         for env in self.envs:
             assert isinstance(env, MultiAgentEnv)
@@ -141,3 +144,9 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
 
     def get_unwrapped(self):
         return [state.env for state in self.env_states]
+
+    def close(self):
+        for env in self.envs:
+            env.close()
+
+        self.interface.close()

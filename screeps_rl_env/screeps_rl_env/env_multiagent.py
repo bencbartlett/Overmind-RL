@@ -92,15 +92,19 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         self.room = self.interface.add_env(self.vector_index)
         self.time = 0
 
+        self.state = None
+
         # Reset if running in non-vector mode (allow vector env to reset if interface is specified)
         if not self.uses_external_interface:
+            # Perform a hard reset, allow two ticks, then reset the room state
             self.interface.reset()
-            self.time = self.interface.tick()
+            for _ in range(2):
+                self.time = self.interface.tick()
+            self.reset()
 
         # TODO: hardcoded
         self.observation_space, self.action_space = ScreepsMultiAgentEnv.get_spaces(self.agents)
 
-        self.state = None
 
         # # Reset to get desired creep config
         # self.reset()

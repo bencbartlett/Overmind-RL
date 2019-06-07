@@ -70,7 +70,7 @@ if __name__ == "__main__":
     creeps_player2 = [CreepAgent(2, i) for i in range(num_creeps_per_side[1])]
     agents = [*creeps_player1, *creeps_player2]
 
-    tune.register_env("screeps_multiagent", lambda config: ScreepsMultiAgentEnv(config, agents = agents))
+    tune.register_env("screeps_multiagent", lambda config: ScreepsMultiAgentEnv(config))
 
     observation_space, action_space = ScreepsMultiAgentEnv.get_spaces(agents)
     policies = {
@@ -91,6 +91,7 @@ if __name__ == "__main__":
                 # "remote_worker_envs": True,
                 "env_config" : {
                     "use_backend": False,
+                    "agents": agents
                 },
                 "multiagent" : {
                     "policies": policies,

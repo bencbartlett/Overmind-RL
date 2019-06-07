@@ -820,7 +820,7 @@ const RL_TRAINING_MODE = true;
  * 1: log every 100th, 101th tick
  * 2: log every tick
  */
-const RL_TRAINING_VERBOSITY = 1;
+const RL_TRAINING_VERBOSITY = 2;
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -22054,8 +22054,6 @@ class OvermindConsole {
     }
     static printTrainingMessage() {
         console.log('\n' + asciiLogoRL.join('\n') + '\n');
-        // console.log(`Reinforcement learning mode active; Memory has been cleared. \n`+
-        //          `Write commands to memory to interact with environment.`);
     }
     static info(aligned = false) {
         const b = bullet;
@@ -26484,6 +26482,11 @@ class RemoteDebugger {
     }
 }
 
+const RL_ACTION_SEGMENT = 70;
+/**
+ * The ActionParser provides a line of direct interaction for the external Python optimizers to control
+ * creep actions via the Memory.reinforcementLearning object.
+ */
 class ActionParser {
     /**
      * Determine the list of actions for each Zerg to perform
@@ -26520,7 +26523,8 @@ class ActionParser {
                         case 'heal':
                             if (targ) {
                                 creep.heal(targ);
-                            } else if (typeof id != 'string') {
+                            }
+                            else if (typeof id != 'string') {
                                 creep.heal(creep);
                             }
                             break;
@@ -26536,31 +26540,45 @@ class ActionParser {
             }
         }
     }
-    static logState() {
+    /**
+     * Periodic logging functions that are used to describe state of training map and identify bugs
+     */
+    static logState(contents) {
         console.log(`[${Game.time}] My creeps: `, _.map(Game.creeps, creep => creep.name + ' ' + creep.pos));
         if (Memory.reinforcementLearning) {
-            console.log(`[${Game.time}] Memory.reinforcementLearning: ${JSON.stringify(Memory.reinforcementLearning)}`);
+            console.log(`[${Game.time}] RL Segment: ${contents}`);
         }
+    }
+    /**
+     * Wraps all creeps as Zerg
+     */
+    static wrapZerg(useCombatZerg = true) {
     }
     /**
      * Read action commands from the designated memory segment, parse them, and run them
      */
     static run() {
         // Parse actions
-        if (Memory.reinforcementLearning) {
-            ActionParser.parseActions(Memory.reinforcementLearning);
+        // if (Memory.reinforcementLearning) {
+        //  ActionParser.parseActions(Memory.reinforcementLearning);
+        // }
+        const raw = RawMemory.segments[RL_ACTION_SEGMENT];
+        if (raw != undefined && raw != '') {
+            const actions = JSON.parse(raw);
+            ActionParser.parseActions(actions);
         }
+        RawMemory.setActiveSegments([RL_ACTION_SEGMENT]); // keep this segment requested during training
         // Log state according to verbosity
         if (RL_TRAINING_VERBOSITY == 0) {
             // no logigng
         }
         else if (RL_TRAINING_VERBOSITY == 1) {
             if (Game.time % 100 == 0 || Game.time % 100 == 1) {
-                this.logState();
+                this.logState(raw);
             }
         }
         else if (RL_TRAINING_VERBOSITY == 2) {
-            this.logState();
+            this.logState(raw);
         }
         // Clear reinforcementLearning block when done
         Memory.reinforcementLearning = {};

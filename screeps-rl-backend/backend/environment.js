@@ -8,6 +8,8 @@ const C = require('@screeps/driver').constants;
 const ROOM = 'E0S0'; // default room to use for single room
 const WORLD_WIDTH = 10; // max width of the world; must be even
 
+const RL_ACTION_SEGMENT = 70;
+
 // const OVERMIND_PATH = "../../../Overmind/dist/main.js";
 
 class ScreepsEnvironment {
@@ -364,10 +366,10 @@ class ScreepsEnvironment {
     async setMemorySegment(username, segment, contents) {
         const {db, env} = await this.server.world.load();
         const {_id} = await db.users.findOne({username: username});
-        console.log(`Setting user ${username} with id ${_id} segment ${segment} to ${contents}`);
+        // console.log(`Setting user ${username} with id ${_id} segment ${segment} to ${contents}`);
         await env.hset(env.keys.MEMORY_SEGMENTS + _id, segment, contents);
-        const seg = await env.hget(env.keys.MEMORY_SEGMENTS + _id, segment);
-        console.log(`Segment: ${seg}`)
+        // const seg = await env.hget(env.keys.MEMORY_SEGMENTS + _id, segment);
+        // console.log(`Segment: ${seg}`)
     }
 
     /**
@@ -378,7 +380,7 @@ class ScreepsEnvironment {
         const {_id} = await db.users.findOne({username: username});
         // console.log(`Setting user memory ${username} with id ${_id} to ${contents}`);
         await env.set(env.keys.MEMORY + _id, contents);
-        const mem = await env.get(env.keys.MEMORY + _id);
+        // const mem = await env.get(env.keys.MEMORY + _id);
         // console.log(`Memory: ${mem}`)
     }
 
@@ -386,8 +388,12 @@ class ScreepsEnvironment {
      * Set the contents of a user's Memory.reinforcementLearning object
      */
     async sendCommands(username, contents) {
-        const rlObjectStringified = '{"reinforcementLearning":' + contents + '}';
-        await this.setMemory(username, rlObjectStringified);
+        // const rlObjectStringified = '{"reinforcementLearning":' + contents + '}';
+        // await this.setMemory(username, rlObjectStringified);
+        const gameTime = await this.server.world.gameTime;
+
+        console.log(`[${gameTime}] Sending commands to ${username}: ${contents}`);
+        await this.setMemorySegment(username, RL_ACTION_SEGMENT, contents)
     }
 
     /**
