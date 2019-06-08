@@ -34,7 +34,7 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
         my_x, my_y = obs[-2:]
         penalty = 0
         for foe_x, foe_y in zip(obs[0:-2:2], obs[1:-2:2]):
-            penalty += max(abs(foe_x - my_x), (foe_y - my_y))
+            penalty += max(abs(foe_x - my_x), abs(foe_y - my_y))
 
         return 1 / 50 * (50 - np.sqrt(penalty))
 
