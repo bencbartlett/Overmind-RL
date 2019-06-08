@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import numpy as np
 
@@ -13,6 +13,75 @@ class ScreepsMultiAgentProcessor(ABC):
     def __init__(self, env):
         from screeps_rl_env import ScreepsMultiAgentEnv  # local import needed to prevent circular dependencies
         self.env: ScreepsMultiAgentEnv = env
+
+    def get_creeps(self, room_objects: List) -> List[Dict]:
+        """
+        Get a list of room objects which are creeps
+        :param room_objects: room objects for the environment room
+        :return: objects which are creeps
+        """
+        return list(filter(lambda obj: obj['type'] == 'creep', room_objects))
+
+    def get_allies(self, room_objects: List, agent_id: str, include_self=False) -> List[Dict]:
+        """
+        Returns a list of allied creeps given room objects
+        :param room_objects: room objects for the environment room
+        :param agent_id: id of the agent to be compared to
+        :param include_self: whether or not to include the agent itself in the list
+        :return: all allied creeps
+        """
+        all_creeps = self.get_creeps(room_objects)
+
+        creep = self.env.agents_dict[agent_id]
+        creep_name = creep.get_full_name(self.env.room)
+        creep_owner = creep.player_name
+
+        if include_self:
+            return list(filter(lambda creep: creep['username'] == creep_owner, all_creeps))
+        else:
+            return list(filter(lambda creep: creep['username'] == creep_owner and
+                                             creep['name'] != creep_name,
+                               all_creeps))
+
+    def get_enemies(self, room_objects: List, agent_id: str) -> List[Dict]:
+        """
+        Returns a list of enemy creeps given room objects
+        :param room_objects: room objects for the environment room
+        :param agent_id: id of the agent to be compared to
+        :return: all enemy creeps
+        """
+        all_creeps = self.get_creeps(room_objects)
+
+        owner = self.env.agents_dict[agent_id].player_name
+
+        return list(filter(lambda creep: creep['username'] == owner, all_creeps))
+
+    def get_enemies_allies_me(self, room_objects: List, agent_id: str) -> Tuple[List[Dict], List[Dict], Dict]:
+        """
+        Given room objects and an agent id, return a tuple of (enemy creeps, allied creeps, self)
+        :param room_objects: room objects for the environment room
+        :param agent_id: id of the agent to be compared to
+        :return: all enemy creeps
+        """
+
+        creep = self.env.agents_dict[agent_id]
+        creep_name = creep.get_full_name(self.env.room)
+        creep_owner = creep.player_name
+
+        all_creeps = self.get_creeps(room_objects)
+
+        enemies, allies, me = [], [], None
+
+        for creep in all_creeps:
+            if creep['username'] != creep_owner:
+                enemies.append(creep)
+            else:
+                if creep['name'] != creep_name:
+                    allies.append(creep)
+                else:
+                    me = creep
+
+        return enemies, allies, me
 
     @abstractmethod
     def process_state(self, room_state: Dict, agent_id: str) -> np.array:
