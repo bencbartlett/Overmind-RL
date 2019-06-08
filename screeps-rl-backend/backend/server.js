@@ -64,6 +64,15 @@ serverMethods.exit = function(reply) {
 
 const server = new zerorpc.Server(serverMethods);
 
+// Register clean exit code
+function onExit() {
+	console.log(`Received SIGTERM/SIGINT: closing server and environment processes for worker_index=${index}`);
+	server.exit();
+}
+
+process.on('SIGTERM', onExit);
+process.on('SIGINT', onExit);
+
 try {
 	server.bind(`tcp://0.0.0.0:${env.commsPort}`);
 } catch (e) {
