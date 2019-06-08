@@ -18,13 +18,9 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id)
 
-        ob = np.concatenate([
+        return np.concatenate([
             [creep['x'], creep['y']] for creep in [*enemies, *allies, me]
         ])
-
-        self.prev_ob = ob
-
-        return ob
 
     def process_action(self, action, agent_id):
         creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
@@ -43,6 +39,7 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
         ob = self.process_state(state, agent_id)
 
         if ob is not None:
+            self.prev_ob[agent_id] = ob
             return ob, self.process_reward(ob, agent_id), False, {}
         else:
-            return self.prev_ob, 0, True, {}
+            return self.prev_ob[agent_id], 0, True, {}

@@ -9,7 +9,7 @@ from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent, S
     ApproachMultiAgentProcessor
 from screeps_rl_env.utils import kill_backend_processes
 
-LOG_TICK_RATE_FREQ = 200
+LOG_TICK_RATE_FREQ = 100
 KILL_BACKEND_PROCESSES = True
 
 
@@ -172,8 +172,8 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
                 time_elapsed = time.time() - self.tick_interval_start
                 ticks_elapsed = LOG_TICK_RATE_FREQ * self.num_envs
                 throughput = ticks_elapsed / time_elapsed
-                print(
-                    f"Vectorized worker_index={self.worker_index}, tick={self.time}: (Tick * room) throughput = {throughput}")
+                print(f"Vectorized worker_index={self.worker_index}, tick={self.time}: " +
+                      "throughput = {:.2f} tick*room/s".format(throughput))
             self.tick_interval_start = time.time()
 
     def try_reset(self, env_id):

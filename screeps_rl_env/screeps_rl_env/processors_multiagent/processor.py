@@ -13,6 +13,7 @@ class ScreepsMultiAgentProcessor(ABC):
     def __init__(self, env):
         from screeps_rl_env import ScreepsMultiAgentEnv  # local import needed to prevent circular dependencies
         self.env: ScreepsMultiAgentEnv = env
+        self.prev_ob: Dict[str, np.ndarray] = {}
 
     def get_creeps(self, room_objects: List) -> List[Dict]:
         """
