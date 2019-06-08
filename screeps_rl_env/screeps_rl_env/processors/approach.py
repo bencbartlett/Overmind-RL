@@ -35,7 +35,7 @@ class ApproachProcessor(ScreepsProcessor):
 
     def process_reward(self, observation):
         my_x, my_y, foe_x, foe_y = observation
-        return 1 / 50 * (50 - np.sqrt((foe_x - my_x) ** 2 + (foe_y - my_y) ** 2))
+        return 1 / 50 * (50 - max(abs(foe_x - my_x), abs(foe_y - my_y)))
 
     def process_observation(self, state):
         """Returns the observation from a room given the state after running self.interface.tick()"""
