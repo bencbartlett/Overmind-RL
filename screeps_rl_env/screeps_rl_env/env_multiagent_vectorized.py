@@ -10,6 +10,7 @@ from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent, S
 
 LOG_TICK_RATE_FREQ = 200
 
+
 class ScreepsMultiAgentVectorEnv(BaseEnv):
 
     def __init__(self,
@@ -32,9 +33,10 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.use_viewer = use_viewer
 
         if interface is None:
-            time.sleep(5)  # if env was just terminated in a failed actor, wait for interface proc to terminate first
+            time.sleep(3)  # if env was just terminated in a failed actor, wait for interface proc to terminate first
             print(f"==> Starting new ScreepsInterface with worker_index={self.worker_index} <==")
             self.interface = ScreepsInterface(self.worker_index)
+            time.sleep(3)  # wait for server to register
         else:
             print('Using existing interface {} with worker index {}'.format(self.interface, self.worker_index))
             self.interface = interface
@@ -166,7 +168,8 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
                 time_elapsed = time.time() - self.tick_interval_start
                 ticks_elapsed = LOG_TICK_RATE_FREQ * self.num_envs
                 throughput = ticks_elapsed / time_elapsed
-                print(f"Vectorized worker_index={self.worker_index}, tick={self.time}: (Tick * room) throughput = {throughput}")
+                print(
+                    f"Vectorized worker_index={self.worker_index}, tick={self.time}: (Tick * room) throughput = {throughput}")
             self.tick_interval_start = time.time()
 
     def try_reset(self, env_id):
