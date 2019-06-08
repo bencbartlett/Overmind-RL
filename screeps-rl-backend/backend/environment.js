@@ -12,6 +12,8 @@ const RL_ACTION_SEGMENT = 70;
 
 const CONFIG = require('../config.json');
 
+const ALLOW_MISMATCHED_CLIENT_RECONNECT = true;
+
 class ScreepsEnvironment {
 
 	/**
@@ -54,12 +56,14 @@ class ScreepsEnvironment {
 							`this.index = ${this.index}; this.roomIndices = ${this.roomIndices}`);
 		} else {
 			this.roomIndices.push(index);
-			if (this.server.started) {
-				const room = ScreepsEnvironment._roomFromIndex(index);
-				await this.addRoom(room);
-				await this.resetRoom(room);
-			}
 		}
+
+		if (this.server.started) {
+			const room = ScreepsEnvironment._roomFromIndex(index);
+			await this.addRoom(room);
+			await this.resetRoom(room);
+		}
+
 		return ScreepsEnvironment._roomFromIndex(index);
 	}
 

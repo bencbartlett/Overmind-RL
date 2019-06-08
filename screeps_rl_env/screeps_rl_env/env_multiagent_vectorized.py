@@ -7,8 +7,10 @@ from ray.rllib.env.base_env import _MultiAgentEnvState
 
 from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent, ScreepsMultiAgentProcessor, \
     ApproachMultiAgentProcessor
+from screeps_rl_env.utils import kill_backend_processes
 
 LOG_TICK_RATE_FREQ = 200
+KILL_BACKEND_PROCESSES = True
 
 
 class ScreepsMultiAgentVectorEnv(BaseEnv):
@@ -33,6 +35,8 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.use_viewer = use_viewer
 
         if interface is None:
+            if KILL_BACKEND_PROCESSES:
+                kill_backend_processes(self.worker_index)
             time.sleep(3)  # if env was just terminated in a failed actor, wait for interface proc to terminate first
             print(f"==> Starting new ScreepsInterface with worker_index={self.worker_index} <==")
             self.interface = ScreepsInterface(self.worker_index)

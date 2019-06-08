@@ -53,7 +53,7 @@ if __name__ == "__main__":
         "num_gpus": 0,
         "num_workers": args.num_workers,  # parallelism
         "num_envs_per_worker": args.num_envs_per_worker,
-        "remote_worker_envs": True,
+        "remote_worker_envs": False,
         "env_config": {
             "agents": agents,
             "use_backend": False,
