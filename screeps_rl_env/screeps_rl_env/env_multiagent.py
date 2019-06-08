@@ -8,10 +8,11 @@ from ray.rllib.env import EnvContext
 
 from screeps_rl_env.interface import ScreepsInterface
 from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor, ApproachMultiAgentProcessor
+from screeps_rl_env.utils import running_on_laptop
 
-try:
+if running_on_laptop():
     import matplotlib.pyplot as plt
-except ImportError:  # fix for crash when running on gcompute machines
+else:  # fix for crash when running on gcompute machines
     import matplotlib
 
     matplotlib.use("Agg")

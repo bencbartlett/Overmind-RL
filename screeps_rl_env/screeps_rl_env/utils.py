@@ -1,3 +1,5 @@
+import platform
+
 import psutil
 
 
@@ -26,3 +28,7 @@ def kill_backend_processes(server_index, verbose=True):
     dead, alive = psutil.wait_procs(processes, timeout=3, callback=on_terminate)
     if verbose: print("Terminated processes: ", dead)
     if verbose: print("Remaining processes: ", alive)
+
+
+def running_on_laptop():
+    return platform.node() == "tau"
