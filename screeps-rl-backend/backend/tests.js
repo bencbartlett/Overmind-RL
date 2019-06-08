@@ -121,12 +121,12 @@ async function run() {
 
 	await env.resetTrainingEnvironment();
 
-	for (let i in _.range(10)) {
+	for (let i in _.range(101)) {
 		console.log(await env.tick());
 	}
 
 	// await testAddingEnv();
-	await testRoomObjects();
+	await testRoomObjects(1);
 	// await testResettingRooms();
 	// await testMemoryWrite();
 	// await testEventLogs();

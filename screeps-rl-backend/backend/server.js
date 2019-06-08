@@ -67,7 +67,7 @@ const server = new zerorpc.Server(serverMethods);
 // Register clean exit code
 function onExit() {
 	console.log(`Received SIGTERM/SIGINT: closing server and environment processes for worker_index=${index}`);
-	server.exit();
+	env.exit();
 }
 
 process.on('SIGTERM', onExit);
