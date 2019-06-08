@@ -4524,7 +4524,7 @@ let TaskRecharge = class TaskRecharge extends Task {
         this.data.minEnergy = minEnergy;
     }
     rechargeRateForCreep(creep, obj) {
-        if (creep.colony.hatchery && creep.colony.hatchery.battery
+        if (creep.colony && creep.colony.hatchery && creep.colony.hatchery.battery
             && obj.id == creep.colony.hatchery.battery.id && creep.roleName != 'queen') {
             return false; // only queens can use the hatchery battery
         }
@@ -4552,7 +4552,8 @@ let TaskRecharge = class TaskRecharge extends Task {
             this.parent.creep = creep;
         }
         // Choose the target to maximize your energy gain subject to other targeting workers
-        const target = creep.inColonyRoom ? maxBy(creep.colony.rechargeables, o => this.rechargeRateForCreep(creep, o))
+        const target = creep.colony && creep.inColonyRoom
+            ? maxBy(creep.colony.rechargeables, o => this.rechargeRateForCreep(creep, o))
             : maxBy(creep.room.rechargeables, o => this.rechargeRateForCreep(creep, o));
         if (!target || creep.pos.getMultiRoomRangeTo(target.pos) > 40) {
             // workers shouldn't harvest; let drones do it (disabling this check can destabilize early economy)
@@ -15508,7 +15509,7 @@ let RandomWalkerScoutOverlord = class RandomWalkerScoutOverlord extends Overlord
         // Check if room might be connected to newbie/respawn zone
         const indestructibleWalls = _.filter(scout.room.walls, wall => wall.hits == undefined);
         if (indestructibleWalls.length > 0) { // go back to origin colony if you find a room near newbie zone
-            scout.task = Tasks.goToRoom(scout.colony.room.name); // todo: make this more precise
+            scout.task = Tasks.goToRoom(this.colony.room.name); // todo: make this more precise
         }
         else {
             // Pick a new room
@@ -18874,7 +18875,7 @@ let Movement = Movement_1 = class Movement {
         if (!road)
             return OK;
         // Move out of the bunker if you're in it
-        if (!maintainDistance && creep.colony.bunker && insideBunkerBounds(creep.pos, creep.colony)) {
+        if (!maintainDistance && creep.colony && creep.colony.bunker && insideBunkerBounds(creep.pos, creep.colony)) {
             return this.goTo(creep, creep.colony.controller.pos);
         }
         let positions = _.sortBy(creep.pos.availableNeighbors(), p => p.getRangeTo(pos));
@@ -20036,10 +20037,20 @@ let Zerg = Zerg_1 = class Zerg {
      * Colony that the creep belongs to.
      */
     get colony() {
-        return Overmind.colonies[this.memory["C" /* COLONY */]];
+        if (this.memory["C" /* COLONY */] != null) {
+            return Overmind.colonies[this.memory["C" /* COLONY */]];
+        }
+        else {
+            return null;
+        }
     }
     set colony(newColony) {
-        this.memory["C" /* COLONY */] = newColony.name;
+        if (newColony != null) {
+            this.memory["C" /* COLONY */] = newColony.name;
+        }
+        else {
+            this.memory["C" /* COLONY */] = null;
+        }
     }
     /**
      * If the creep is in a colony room or outpost
@@ -26493,6 +26504,14 @@ class RemoteDebugger {
     }
 }
 
+/*
+
+ _____  _    _ _______  ______ _______ _____ __   _ ______
+|     |  \  /  |______ |_____/ |  |  |   |   | \  | |     \
+|_____|   \/   |______ |    \_ |  |  | __|__ |  \_| |_____/
+....... R E I N F O R C E M E N T   L E A R N I N G .......
+
+*/
 const RL_ACTION_SEGMENT = 70;
 /**
  * The ActionParser provides a line of direct interaction for the external Python optimizers to control
@@ -26500,54 +26519,78 @@ const RL_ACTION_SEGMENT = 70;
  */
 class ActionParser {
     /**
+     * Parse an individual action from its serialized format and command the actor to execute it.
+     * Returns whether the action was valid.
+     */
+    static parseAction(actor, action) {
+        const [command, id] = action;
+        const targ = typeof id == 'string' ? Game.getObjectById(id) : null;
+        switch (command) {
+            case 'move':
+                actor.move(id);
+                break;
+            // case 'moveTo':
+            //  if (targ) creep.moveTo(targ);
+            //  break;
+            case 'goTo':
+                if (targ)
+                    actor.goTo(targ);
+                break;
+            case 'attack':
+                if (targ)
+                    actor.attack(targ);
+                break;
+            case 'rangedAttack':
+                if (targ)
+                    actor.rangedAttack(targ);
+                break;
+            case 'rangedMassAttack':
+                actor.rangedMassAttack();
+                break;
+            case 'heal':
+                if (targ) {
+                    actor.heal(targ);
+                }
+                else if (typeof id != 'string') {
+                    actor.heal(actor);
+                }
+                break;
+            case 'rangedHeal':
+                if (targ)
+                    actor.rangedHeal(targ);
+                break;
+            case 'noop':
+                break;
+            default:
+                console.log(`[${Game.time}] Invalid command: ${command}!`);
+                return false;
+        }
+        return true;
+    }
+    /**
      * Determine the list of actions for each Zerg to perform
      */
-    static parseActions(serializedActions) {
+    static parseActions(actors, serializedActions) {
+        const receivedOrders = _.mapValues(actors, actor => false);
+        // Deserialize the actions for each actor
         for (const creepName in serializedActions) {
-            const creep = Game.creeps[creepName];
+            const creep = actors[creepName];
             if (!creep) {
                 console.log(`No creep with name ${creepName}!`);
+                continue;
             }
-            else {
-                for (const action of serializedActions[creepName]) {
-                    const [command, id] = action;
-                    const targ = typeof id == 'string' ? Game.getObjectById(id) : null;
-                    switch (command) {
-                        case 'move':
-                            creep.move(id);
-                            break;
-                        case 'moveTo':
-                            if (targ)
-                                creep.moveTo(targ);
-                            break;
-                        case 'attack':
-                            if (targ)
-                                creep.attack(targ);
-                            break;
-                        case 'rangedAttack':
-                            if (targ)
-                                creep.rangedAttack(targ);
-                            break;
-                        case 'rangedMassAttack':
-                            creep.rangedMassAttack();
-                            break;
-                        case 'heal':
-                            if (targ) {
-                                creep.heal(targ);
-                            }
-                            else if (typeof id != 'string') {
-                                creep.heal(creep);
-                            }
-                            break;
-                        case 'rangedHeal':
-                            if (targ)
-                                creep.rangedHeal(targ);
-                            break;
-                        default:
-                            console.log(`Invalid command: ${command}!`);
-                            break;
-                    }
+            // Parse and execute each action, recording whether it was valid
+            for (const action of serializedActions[creepName]) {
+                const validAction = ActionParser.parseAction(creep, action);
+                if (validAction) {
+                    receivedOrders[creepName] = true;
                 }
+            }
+        }
+        // Ensure each actor was given an order (possibly noop)
+        for (const actorName in actors) {
+            if (!receivedOrders[actorName]) {
+                console.log(`[${Game.time}] Actor with name ${actorName} did not receive an order this tick!`);
             }
         }
     }
@@ -26563,16 +26606,21 @@ class ActionParser {
     /**
      * Wraps all creeps as Zerg
      */
-    static wrapZerg(useCombatZerg = true) {
+    static wrapZerg() {
+        return _.mapValues(Game.creeps, creep => new CombatZerg(creep));
     }
     /**
      * Read action commands from the designated memory segment, parse them, and run them
      */
     static run() {
+        const actors = ActionParser.wrapZerg();
         const raw = RawMemory.segments[RL_ACTION_SEGMENT];
         if (raw != undefined && raw != '') {
             const actions = JSON.parse(raw);
-            ActionParser.parseActions(actions);
+            ActionParser.parseActions(actors, actions);
+        }
+        else {
+            console.log(`[${Game.time}]: No actions received!`);
         }
         RawMemory.setActiveSegments([RL_ACTION_SEGMENT]); // keep this segment requested during training
         // Log state according to verbosity
@@ -26608,12 +26656,12 @@ class ActionParser {
 // =====================================================================================================================
 // Main loop
 function main() {
-    // Memory operations: load and clean memory, suspend operation as needed
+    // Memory operations: load and clean memory, suspend operation as needed -------------------------------------------
     Mem.load(); // Load previous parsed memory if present
     if (!Mem.shouldRun())
         return; // Suspend operation if necessary
     Mem.clean(); // Clean memory contents
-    // Instantiation operations: build or refresh the game state
+    // Instantiation operations: build or refresh the game state -------------------------------------------------------
     if (!Overmind || Overmind.shouldBuild || Game.time >= Overmind.expiration) {
         delete global.Overmind; // Explicitly delete the old Overmind object
         Mem.garbageCollect(true); // Run quick garbage collection
@@ -26623,18 +26671,21 @@ function main() {
     else {
         Overmind.refresh(); // Refresh phase: update the Overmind state
     }
-    // Tick loop cycle: initialize and run each component
+    // Tick loop cycle: initialize and run each component --------------------------------------------------------------
     Overmind.init(); // Init phase: spawning and energy requests
     Overmind.run(); // Run phase: execute state-changing actions
     Overmind.visuals(); // Draw visuals
     Stats.run(); // Record statistics
-    // Post-run code: handle sandbox code and error catching
+    // Post-run code: handle sandbox code and error catching -----------------------------------------------------------
     sandbox(); // Sandbox: run any testing code
     global.remoteDebugger.run(); // Run remote debugger code if enabled
     Overmind.postRun(); // Error catching is run at end of every tick
 }
 // Main loop if RL mode is enabled (~settings.ts)
-function main_rl() {
+function main_RL() {
+    Mem.clean();
+    delete global.Overmind;
+    global.Overmind = new _Overmind$1();
     ActionParser.run();
 }
 // This gets run on each global reset
@@ -26655,11 +26706,15 @@ function onGlobalReset() {
     // Make a remote debugger
     global.remoteDebugger = new RemoteDebugger();
 }
+// Global reset function if RL mode is enabled
+function onGlobalReset_RL() {
+    Mem.format();
+}
 // Decide which loop to export as the script loop
 let _loop;
 if (RL_TRAINING_MODE) {
     // Use stripped version for training reinforcment learning model
-    _loop = main_rl;
+    _loop = main_RL;
 }
 else {
     if (USE_PROFILER) {
@@ -26672,8 +26727,10 @@ else {
     }
 }
 const loop = _loop;
+// Run the appropriate global reset function
 if (RL_TRAINING_MODE) {
     OvermindConsole.printTrainingMessage();
+    onGlobalReset_RL();
 }
 else {
     // Register these functions for checksum computations with the Assimilator

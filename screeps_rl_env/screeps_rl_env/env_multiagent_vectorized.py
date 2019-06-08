@@ -1,10 +1,11 @@
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Type
 
 from ray.rllib import BaseEnv, MultiAgentEnv
 from ray.rllib.env import EnvContext
 from ray.rllib.env.base_env import _MultiAgentEnvState
 
-from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent
+from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent, ScreepsMultiAgentProcessor, \
+    ApproachMultiAgentProcessor
 
 
 class ScreepsMultiAgentVectorEnv(BaseEnv):
@@ -12,6 +13,7 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
     def __init__(self,
                  env_config: Union[EnvContext, Dict],
                  num_envs: int = 1,
+                 processor: Type[ScreepsMultiAgentProcessor] = ApproachMultiAgentProcessor,
                  interface: ScreepsInterface = None,
                  use_backend: bool = False,
                  use_viewer: bool = False):
@@ -38,6 +40,7 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.num_envs = num_envs
         self.envs = [
             ScreepsMultiAgentEnv(env_config,
+                                 processor = processor,
                                  worker_index=self.worker_index,
                                  vector_index=i,
                                  interface=self.interface,
@@ -64,10 +67,24 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         return ScreepsMultiAgentEnv.get_spaces(agents)
 
     def poll(self):
+        """
+        Returns observations from ready agents, indexed by env_id then agent_id.
+        The number of agents and envs can vary over time.
+        :return: nested dict of (obs, rewards, dones, infos, off_policy_actions) indexed by env_id then agent id
+            obs: New observations for each ready agent.
+            rewards: Reward values for each ready agent. If the episode is just started, the value will be None.
+            dones: Done values for each ready agent. The special key "__all__" is used to indicate env termination.
+            infos: Info values for each ready agent.
+            off_policy_actions: Agents may take off-policy actions. When that happens, there will be an entry in
+                this dict that contains the taken action. There is no need to send_actions() for agents that have
+                already chosen off-policy actions.
+        """
         obs, rewards, dones, infos = {}, {}, {}, {}
         for i, env_state in enumerate(self.env_states):
             obs[i], rewards[i], dones[i], infos[i] = env_state.poll()
-        return obs, rewards, dones, infos, {}
+
+        off_policy_actions = {}
+        return obs, rewards, dones, infos, off_policy_actions
 
     def send_actions(self, action_dict):
         """
@@ -151,3 +168,7 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
             env.close()
 
         self.interface.close()
+
+    def with_agent_groups(self, groups, obs_space=None, act_space=None):
+        from screeps_rl_env.grouped_agents import GroupedAgentsWrapper
+        return GroupedAgentsWrapper(self, groups, obs_space, act_space)
