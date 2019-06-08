@@ -72,7 +72,8 @@ async function testResettingRooms() {
 async function testRoomObjects(numTicks = 10) {
 	for (let tick in _.range(numTicks)) {
 		console.log(await env.tick());
-		console.log('All roomObjects:', await env.getAllRoomObjects());
+		const roomObjects = await env.getAllRoomObjects();
+		console.log('All roomObjects:', JSON.stringify(roomObjects, null, '\t'));
 	}
 }
 
@@ -120,18 +121,14 @@ async function run() {
 
 	await env.resetTrainingEnvironment();
 
-	console.log(await env.tick());
-	console.log(await env.tick());
-	console.log(await env.tick());
-	console.log(await env.tick());
+	for (let i in _.range(10)) {
+		console.log(await env.tick());
+	}
 
 	// await testAddingEnv();
-
-	console.log(await env.tick());
-	console.log(await env.tick());
-	// await testRoomObjects();
+	await testRoomObjects();
 	// await testResettingRooms();
-	await testMemoryWrite();
+	// await testMemoryWrite();
 	// await testEventLogs();
 	// await testChangingRoomTerrain();
 

@@ -2,7 +2,6 @@ from time import sleep
 from typing import Type, Union, Dict, List
 
 import gym
-import matplotlib.pyplot as plt
 import numpy as np
 from ray.rllib import MultiAgentEnv
 from ray.rllib.env import EnvContext
@@ -10,7 +9,13 @@ from ray.rllib.env import EnvContext
 from screeps_rl_env.interface import ScreepsInterface
 from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor, ApproachMultiAgentProcessor
 
-PATH_TO_BACKEND = "../../screeps-rl-backend/backend/server.js"
+try:
+    import matplotlib.pyplot as plt
+except ImportError:  # fix for crash when running on gcompute machines
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
 
 
 class CreepAgent:

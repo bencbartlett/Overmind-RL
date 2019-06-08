@@ -2,12 +2,19 @@ from time import sleep
 from typing import Type, Union, Dict
 
 import gym
-import matplotlib.pyplot as plt
 import numpy as np
 from ray.rllib.env import EnvContext
 
 from screeps_rl_env.interface import ScreepsInterface
 from screeps_rl_env.processors import ApproachProcessor, ScreepsProcessor
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:  # fix for crash when running on gcompute machines
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
 
 
 class ScreepsEnv(gym.Env):

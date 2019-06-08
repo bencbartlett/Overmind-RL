@@ -1,3 +1,4 @@
+import time
 from typing import Dict, Union, List, Type
 
 from ray.rllib import BaseEnv, MultiAgentEnv
@@ -7,6 +8,7 @@ from ray.rllib.env.base_env import _MultiAgentEnvState
 from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent, ScreepsMultiAgentProcessor, \
     ApproachMultiAgentProcessor
 
+LOG_TICK_RATE_FREQ = 200
 
 class ScreepsMultiAgentVectorEnv(BaseEnv):
 
@@ -30,6 +32,7 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.use_viewer = use_viewer
 
         if interface is None:
+            time.sleep(5)  # if env was just terminated in a failed actor, wait for interface proc to terminate first
             print(f"==> Starting new ScreepsInterface with worker_index={self.worker_index} <==")
             self.interface = ScreepsInterface(self.worker_index)
         else:
@@ -40,7 +43,7 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.num_envs = num_envs
         self.envs = [
             ScreepsMultiAgentEnv(env_config,
-                                 processor = processor,
+                                 processor=processor,
                                  worker_index=self.worker_index,
                                  vector_index=i,
                                  interface=self.interface,
@@ -51,9 +54,11 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.envs_by_room = {env.room: env for env in self.envs}
 
         # Perform a hard reset and allow two ticks for scripts to initialize
+        self.tick_interval_start = None
         self.interface.reset()
         for _ in range(2):
-            self.time = self.interface.tick()
+            # self.time = self.interface.tick()
+            self._tick()
 
         self.dones = set()
 
@@ -119,7 +124,8 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.interface.send_all_actions(all_actions)
 
         # Run the tick
-        self.time = self.interface.tick()
+        # self.time = self.interface.tick()
+        self._tick()
 
         # Get all room states and set env.state for each environment
         all_states = self.interface.get_all_room_states()
@@ -152,6 +158,16 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
                 self.dones.add(env_id)
 
             self.env_states[env_id].observe(obs, rewards, dones, infos)
+
+    def _tick(self):
+        self.time = self.interface.tick()
+        if self.time % LOG_TICK_RATE_FREQ == 2:
+            if self.tick_interval_start is not None:
+                time_elapsed = time.time() - self.tick_interval_start
+                ticks_elapsed = LOG_TICK_RATE_FREQ * self.num_envs
+                throughput = ticks_elapsed / time_elapsed
+                print(f"Vectorized worker_index={self.worker_index}, tick={self.time}: (Tick * room) throughput = {throughput}")
+            self.tick_interval_start = time.time()
 
     def try_reset(self, env_id):
         obs = self.env_states[env_id].reset()

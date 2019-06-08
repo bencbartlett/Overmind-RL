@@ -12,8 +12,8 @@ BACKEND_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), BACKEND_
 RL_ACTION_SEGMENT = 70
 
 
-def terminate_server_process(proc):
-    print("Terminating Screeps server process with pid {}".format(proc.pid))
+def terminate_server_process(proc, worker_index):
+    print("Terminating Screeps server process with worker_index {} and pid {}".format(worker_index, proc.pid))
     proc.terminate()
 
 
@@ -32,11 +32,11 @@ class ScreepsInterface:
         if start_server:
             print("Starting remote server at " + str(self.port) + "...")
             self.server_process = Popen(["node", BACKEND_PATH, str(self.index)])
-            atexit.register(terminate_server_process, self.server_process)
+            atexit.register(terminate_server_process, self.server_process, self.index)
 
         self.c = zerorpc.Client(connect_to="tcp://127.0.0.1:" + str(self.port),
-                                timeout=15,
-                                heartbeat=3,
+                                timeout=30,
+                                heartbeat=5,
                                 passive_heartbeat=True)
 
         self.all_rooms = []

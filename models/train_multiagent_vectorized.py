@@ -9,9 +9,8 @@ from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
 parser = argparse.ArgumentParser(description="Train multi-agent model")
 parser.add_argument("--model", type=str, default="APEX_QMIX")
 parser.add_argument("--cluster", type=bool, default=False)
-parser.add_argument("--num_workers", type=int, default=6)
+parser.add_argument("--num_workers", type=int, default=5)
 parser.add_argument("--num_envs_per_worker", type=int, default=10)
-parser.add_argument("--grouped", type=bool, default=True)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -54,6 +53,7 @@ if __name__ == "__main__":
         "num_gpus": 0,
         "num_workers": args.num_workers,  # parallelism
         "num_envs_per_worker": args.num_envs_per_worker,
+        "remote_worker_envs": True,
         "env_config": {
             "agents": agents,
             "use_backend": False,

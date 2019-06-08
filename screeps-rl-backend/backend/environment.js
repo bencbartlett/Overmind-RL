@@ -39,7 +39,6 @@ class ScreepsEnvironment {
 
 		this.agent1 = undefined;
 		this.agent2 = undefined;
-		this.spectator = undefined;
 
 		// List of vector_index entries that correspond to new rooms
 		this.roomIndices = [];
@@ -63,21 +62,6 @@ class ScreepsEnvironment {
 		}
 		return ScreepsEnvironment._roomFromIndex(index);
 	}
-
-	// addEnv(index) {
-	//     // if (index === undefined) {
-	//     //     index = this.roomIndices.length;
-	//     // }
-	//     if (this.roomIndices.includes(index)) {
-	//         throw new Error(`Cannot add room environment with vector_index ${index}! ` +
-	//             `this.index = ${this.index}; this.roomIndices = ${this.roomIndices}`);
-	//     } else if (this.server.started) {
-	//         throw new Error(`ScreepsEnvironment.addEnv() can only be called before starting server!`)
-	//     } else {
-	//         this.roomIndices.push(index);
-	//     }
-	//     return ScreepsEnvironment._roomFromIndex(index);
-	// }
 
 	/**
 	 * Lists the names of all rooms in the simulation
@@ -140,9 +124,11 @@ class ScreepsEnvironment {
 	 */
 	async resetRoom(roomName, creepConfig = null) {
 
-		const gameTime = await this.server.world.gameTime;
-
-		console.log(`[${gameTime}] Resetting environment ${this.index}, room ${roomName}`);
+		const VERBOSE = false;
+		if (VERBOSE) {
+			const gameTime = await this.server.world.gameTime;
+			console.log(`[${gameTime}] Resetting environment ${this.index}, room ${roomName}`);
+		}
 
 		await this.deleteRoomCreeps(roomName);
 
@@ -201,7 +187,7 @@ class ScreepsEnvironment {
 		// Add two players
 		const agent1 = await this.addAgent('Agent1', '#0000ff');
 		const agent2 = await this.addAgent('Agent2', '#ff0000');
-		const spectator = await this.addSpectator();
+		await this.addSpectator();
 
 		this.agent1 = agent1;
 		this.agent2 = agent2;

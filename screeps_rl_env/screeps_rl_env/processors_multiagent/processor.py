@@ -58,7 +58,7 @@ class ScreepsMultiAgentProcessor(ABC):
 
     def get_enemies_allies_me(self, room_objects: List, agent_id: str) -> Tuple[List[Dict], List[Dict], Dict]:
         """
-        Given room objects and an agent id, return a tuple of (enemy creeps, allied creeps, self)
+        Given room objects and an agent id, return a tuple of (enemy creeps, allied creeps, self) sorted by name
         :param room_objects: room objects for the environment room
         :param agent_id: id of the agent to be compared to
         :return: all enemy creeps
@@ -80,6 +80,9 @@ class ScreepsMultiAgentProcessor(ABC):
                     allies.append(creep)
                 else:
                     me = creep
+
+        enemies.sort(key=lambda creep: creep['name'])
+        allies.sort(key=lambda creep: creep['name'])
 
         return enemies, allies, me
 
