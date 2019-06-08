@@ -241,7 +241,7 @@ class ScreepsEnvironment {
 		const memory = {
 			reinforcementLearning: {
 				enabled  : true,
-				verbosity: 1,
+				verbosity: 0,
 			}
 		};
 		const bot = await this.server.world.addHeadlessBot({username, modules, badgeColor, memory});
