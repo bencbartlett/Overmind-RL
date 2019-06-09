@@ -109,7 +109,8 @@ class ScreepsEnvironment {
 	 */
 	static generateTerrain() {
 		const terrain = new TerrainMatrix();
-		const walls = [[10, 10], [10, 40], [40, 10], [40, 40]];
+		// const walls = [[10, 10], [10, 40], [40, 10], [40, 40]];
+		const walls = [];
 		_.each(walls, ([x, y]) => terrain.set(x, y, 'wall'));
 		return terrain;
 	}

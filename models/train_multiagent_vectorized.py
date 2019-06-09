@@ -3,6 +3,7 @@ import argparse
 import gym
 import ray
 from ray import tune
+from ray.rllib.agents.qmix import QMixTrainer
 
 from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
 from screeps_rl_env.processors_multiagent import CombatMultiAgentProcessor
@@ -12,6 +13,7 @@ parser.add_argument("--model", type=str, default="APEX_QMIX")
 parser.add_argument("--cluster", type=bool, default=False)  # not running_on_laptop())
 parser.add_argument("--num_workers", type=int, default=2)
 parser.add_argument("--num_envs_per_worker", type=int, default=5)
+parser.add_argument("--debug", type=bool, default=True)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -92,6 +94,20 @@ if __name__ == "__main__":
                 "policy_mapping_fn": tune.function(lambda agent_id: agent_id),
             }
         }
+
+    if args.debug:
+        trainer = QMixTrainer(
+            env="screeps_multiagent_vectorized_grouped",
+            config={
+                "num_workers": 0,
+                "num_envs_per_worker": args.num_envs_per_worker,
+                "env_config": {
+                    "agents": agents,
+                    "use_backend": False,
+                },
+            }
+        )
+        trainer.train()
 
     tune.run(
         args.model,

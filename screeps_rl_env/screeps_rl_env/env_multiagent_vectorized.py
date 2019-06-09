@@ -10,7 +10,7 @@ from screeps_rl_env import ScreepsMultiAgentEnv, ScreepsInterface, CreepAgent, S
 from screeps_rl_env.utils import kill_backend_processes
 
 LOG_TICK_RATE_FREQ = 100
-KILL_BACKEND_PROCESSES = True
+KILL_BACKEND_PROCESSES = False
 
 
 class ScreepsMultiAgentVectorEnv(BaseEnv):

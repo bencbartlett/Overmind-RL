@@ -56,14 +56,14 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         heal_potential = potentials["heal"]
 
         return {
-            "xy": (x, y),
-            "dxdy": (dx, dy),
-            "hits": hits,
+            "xy": np.array([x, y]),
+            "dxdy": np.array([dx, dy]),
+            "hits": np.array([hits]),
             # "hits_max": hits_max,
-            "hits_frac": hits_frac,
-            "attack_potential": attack_potential,
-            "ranged_attack_potential": ranged_attack_potential,
-            "heal_potential": heal_potential,
+            "hits_frac": np.array([hits_frac]),
+            "attack_potential": np.array([attack_potential]),
+            "ranged_attack_potential": np.array([ranged_attack_potential]),
+            "heal_potential": np.array([heal_potential]),
         }
 
         # return x, y, dx, dy, hits, hits_max, hits_frac, attack_potential, ranged_attack_potential, heal_potential
@@ -78,7 +78,7 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id)
         all_creeps = [*enemies, *allies, me]
-        return (self.get_features(creep, me) for creep in all_creeps)
+        return np.array([self.get_features(creep, me) for creep in all_creeps])
 
         # return np.concatenate([
         #     self.get_features(creep, me) for creep in [*enemies, *allies, me]
