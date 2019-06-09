@@ -74,8 +74,9 @@ class ScreepsMultiAgentVectorEnv(BaseEnv):
         self.env_states = [_MultiAgentEnvState(env) for env in self.envs]
 
     @staticmethod
-    def get_spaces(agents: List[CreepAgent]):
-        return ScreepsMultiAgentEnv.get_spaces(agents)
+    def get_spaces(agents: List[CreepAgent],
+                   processor: Type[ScreepsMultiAgentProcessor] = ApproachMultiAgentProcessor):
+        return ScreepsMultiAgentEnv.get_spaces(agents, processor)
 
     def poll(self):
         """

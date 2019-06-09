@@ -5,12 +5,13 @@ import ray
 from ray import tune
 
 from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
+from screeps_rl_env.processors_multiagent import CombatMultiAgentProcessor
 
 parser = argparse.ArgumentParser(description="Train multi-agent model")
 parser.add_argument("--model", type=str, default="APEX_QMIX")
-parser.add_argument("--cluster", type=bool, default=False)
-parser.add_argument("--num_workers", type=int, default=5)
-parser.add_argument("--num_envs_per_worker", type=int, default=10)
+parser.add_argument("--cluster", type=bool, default=False)  # not running_on_laptop())
+parser.add_argument("--num_workers", type=int, default=2)
+parser.add_argument("--num_envs_per_worker", type=int, default=5)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -33,27 +34,34 @@ if __name__ == "__main__":
         "Agent2": [creep.agent_id for creep in creeps_player2],
     }
 
+    processor = CombatMultiAgentProcessor
+
     # Generate grouped observation space
-    observation_space, action_space = ScreepsMultiAgentVectorEnv.get_spaces(agents)
+    observation_space, action_space = ScreepsMultiAgentVectorEnv.get_spaces(agents, processor=processor)
     observation_space_grouped = gym.spaces.Tuple([observation_space] * len(grouping["Agent1"]))
     action_space_grouped = gym.spaces.Tuple([action_space] * len(grouping["Agent1"]))
 
     # Register environments
     tune.register_env("screeps_multiagent_vectorized",
-                      lambda config: ScreepsMultiAgentVectorEnv(config, num_envs=args.num_envs_per_worker))
+                      lambda env_config: ScreepsMultiAgentVectorEnv(env_config,
+                                                                    processor=processor,
+                                                                    num_envs=args.num_envs_per_worker))
 
     tune.register_env("screeps_multiagent_vectorized_grouped",
-                      lambda config:
-                      ScreepsMultiAgentVectorEnv(config, num_envs=args.num_envs_per_worker).with_agent_groups(
-                          grouping, obs_space=observation_space_grouped, act_space=action_space_grouped
-                      ))
+                      lambda env_config:
+                      ScreepsMultiAgentVectorEnv(env_config,
+                                                 processor=processor,
+                                                 num_envs=args.num_envs_per_worker)
+                      .with_agent_groups(grouping,
+                                         obs_space=observation_space_grouped,
+                                         act_space=action_space_grouped))
 
     config = {
         # "lr"         : grid_search([1e-2 , 1e-4, 1e-6]),  # try different lrs
         "num_gpus": 0,
         "num_workers": args.num_workers,  # parallelism
         "num_envs_per_worker": args.num_envs_per_worker,
-        "remote_worker_envs": False,
+        "remote_worker_envs": True,
         "env_config": {
             "agents": agents,
             "use_backend": False,
@@ -67,19 +75,12 @@ if __name__ == "__main__":
             "learning_starts": 5000,
             "double_q": False,
         }
-        group = True
     elif args.model == "APEX_QMIX":
         config = {
             **config,
             "env": "screeps_multiagent_vectorized_grouped",
-            "buffer_size": 200000,
-            "learning_starts": 5000,
-            "sample_batch_size": 32,
-            "timesteps_per_iteration": 2500,
-            "double_q": False,
         }
-        group = True
-    elif args.model == "PG":
+    elif args.model == "PPO":
         policies = {
             creep.agent_id: (None, observation_space, action_space, {}) for creep in agents
         }
@@ -91,7 +92,6 @@ if __name__ == "__main__":
                 "policy_mapping_fn": tune.function(lambda agent_id: agent_id),
             }
         }
-        group = False
 
     tune.run(
         args.model,
@@ -102,5 +102,5 @@ if __name__ == "__main__":
         checkpoint_freq=100,
         checkpoint_at_end=True,
         reuse_actors=True,
-        queue_trials=False
+        queue_trials=True
     )

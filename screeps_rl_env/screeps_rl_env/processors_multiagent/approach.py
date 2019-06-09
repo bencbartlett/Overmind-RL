@@ -1,3 +1,4 @@
+import gym
 import numpy as np
 
 from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor
@@ -7,6 +8,12 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
     """
     Train a creep to approach the other creep in the room using base movement intents
     """
+
+    @staticmethod
+    def get_spaces(agents):
+        observation_space = gym.spaces.MultiDiscrete((50, 50) * len(agents))
+        action_space = gym.spaces.Discrete(8)
+        return observation_space, action_space
 
     def process_state(self, room_state, agent_id):
         room_objects = room_state["roomObjects"]

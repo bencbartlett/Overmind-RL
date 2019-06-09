@@ -121,7 +121,7 @@ async function run() {
 
 	await env.resetTrainingEnvironment();
 
-	for (let i in _.range(101)) {
+	for (let i in _.range(10)) {
 		console.log(await env.tick());
 	}
 
@@ -129,7 +129,7 @@ async function run() {
 	await testRoomObjects(1);
 	// await testResettingRooms();
 	// await testMemoryWrite();
-	// await testEventLogs();
+	await testEventLogs();
 	// await testChangingRoomTerrain();
 
 	console.log(await env.tick());

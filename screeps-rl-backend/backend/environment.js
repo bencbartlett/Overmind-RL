@@ -306,7 +306,7 @@ class ScreepsEnvironment {
 		return body;
 	}
 
-	async createCreep(agent, room, x, y, name = undefined, body = undefined, lifetime = 100) {
+	async createCreep(agent, room, x, y, name = undefined, body = undefined, lifetime = 300) {
 
 		if (!name) {
 			name = await this.generateCreepName(agent, room);

@@ -99,6 +99,7 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         self.room = self.interface.add_env(self.vector_index)
         self.time = 0
 
+        self.id_ownership = {}
         self.state = None
 
         # Reset if running in non-vector mode (allow vector env to reset if interface is specified)
@@ -116,31 +117,21 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         # self.reset()
 
     @staticmethod
-    def get_spaces(agents: List[CreepAgent]):
-        """
-        Yields the observation and action spaces; convenient for fetching spaces without instantiatng an environment
-        :param agents: list of agents that would instantiate the ScreepsMultiAgentEnv
-        :return: observation_space, action_space
-        """
-        observation_space = gym.spaces.MultiDiscrete((50, 50) * len(agents))
-        action_space = gym.spaces.Discrete(8)
-        return observation_space, action_space
-
-    # def reset(self):
-    #     """Resets the env and returns observations from ready agents.
-    #
-    #     Returns:
-    #         obs (dict): New observations for each ready agent.
-    #     """
-    #     self.interface.reset()
-    #     self.interface.tick()
-    #     state = self.interface.get_room_state(self.room)
-    #     return self.processor.process_state(state)
+    def get_spaces(agents: List[CreepAgent],
+                   processor: Type[ScreepsMultiAgentProcessor] = ApproachMultiAgentProcessor):
+        return processor.get_spaces(agents)
 
     def reset(self):
         self.interface.reset_room(self.room, [agent.serialize() for agent in self.agents])
         # self.time = self.interface.tick()
         self.state = self.interface.get_room_state(self.room)
+        room_objects = self.state["roomObjects"]
+        self.id_ownership = {}
+        for obj in room_objects:
+            id = obj.get("_id")
+            owner = obj.get("username")
+            if id is not None and owner is not None:
+                self.id_ownership[id] = owner
         return {id: self.processor.process_state(self.state, id) for id in self.agents_dict.keys()}
 
     def step_pre_tick(self, action_dict: Dict):
@@ -154,12 +145,12 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
         return processed_actions
 
-    def step_post_tick(self, action_dict: Dict, state: Dict):
+    def step_post_tick(self, action_dict: Dict, room_state: Dict):
 
         obs, rewards, dones, infos = {}, {}, {}, {}
         for id in action_dict.keys():
-            obs[id], rewards[id], dones[id], infos[id] = self.processor.process_observation(state, id)
-        dones["__all__"] = any(dones.values())
+            obs[id], rewards[id], dones[id], infos[id] = self.processor.process_observation(room_state, id)
+        dones["__all__"] = all(dones.values())
 
         return obs, rewards, dones, infos
 
