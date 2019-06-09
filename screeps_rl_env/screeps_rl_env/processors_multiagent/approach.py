@@ -11,7 +11,9 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
     @staticmethod
     def get_spaces(agents):
-        observation_space = gym.spaces.MultiDiscrete((50, 50) * len(agents))
+        # observation_space = gym.spaces.MultiDiscrete((50, 50) * len(agents))
+        observation_space = gym.spaces.Tuple(
+            [gym.spaces.Box(low=0, high=49, shape=(2,), dtype=np.uint8)] * len(agents))
         action_space = gym.spaces.Discrete(8)
         return observation_space, action_space
 
@@ -25,18 +27,21 @@ class ApproachMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id)
 
-        return np.concatenate([
-            [creep['x'], creep['y']] for creep in [*enemies, *allies, me]
-        ])
+        return [
+            np.array([creep['x'], creep['y']]) for creep in [*enemies, *allies, me]
+        ]
 
     def process_action(self, action, agent_id):
         creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
         return {creep_name: [["move", int(action) + 1]]}
 
     def process_reward(self, obs, agent_id):
-        my_x, my_y = obs[-2:]
         penalty = 0
-        for foe_x, foe_y in zip(obs[0:-2:2], obs[1:-2:2]):
+        # my_x, my_y = obs[-2:]
+        # for foe_x, foe_y in zip(obs[0:-2:2], obs[1:-2:2]):
+        #     penalty += max(abs(foe_x - my_x), abs(foe_y - my_y))
+        my_x, my_y = obs[-1]
+        for foe_x, foe_y in obs[0:-1]:
             penalty += max(abs(foe_x - my_x), abs(foe_y - my_y))
 
         return 1 / 50 * (50 - np.sqrt(penalty))

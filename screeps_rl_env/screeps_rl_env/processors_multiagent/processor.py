@@ -1,3 +1,4 @@
+from pprint import pprint
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple, List
 
@@ -118,7 +119,7 @@ class ScreepsMultiAgentProcessor(ABC):
 
         return enemies, allies, me
 
-    def parse_event_log(self, event_log: Dict):
+    def parse_event_log(self, event_log: List[Dict]):
         attack_events, heal_events, destroy_events = [], [], []
 
         for event in event_log:
@@ -131,7 +132,7 @@ class ScreepsMultiAgentProcessor(ABC):
 
         return attack_events, heal_events, destroy_events
 
-    def get_damage_done_last_tick(self, event_log: Dict, creep_object_id: str):
+    def get_damage_done_last_tick(self, event_log: List[Dict], creep_object_id: str) -> int:
         """
         Gets the total amount of damage a creep dealt last tick
         :param event_log: event log for the room
@@ -142,10 +143,10 @@ class ScreepsMultiAgentProcessor(ABC):
         damage_dealt = 0
         for event in attack_events:
             if event["objectId"] == creep_object_id:
-                damage_dealt += event["damage"]["amount"]
+                damage_dealt += event["data"]["damage"]
         return damage_dealt
 
-    def get_enemy_deaths(self, event_log: Dict, agent_id: str) -> List[Dict]:
+    def get_enemy_deaths(self, event_log: List[Dict], agent_id: str) -> List[Dict]:
         death_events = []
         agent_owner = self.env.agents_dict[agent_id].player_name
         _, _, destroy_events = self.parse_event_log(event_log)
@@ -156,7 +157,7 @@ class ScreepsMultiAgentProcessor(ABC):
                 death_events.append(event)
         return death_events
 
-    def get_allied_deaths(self, event_log: Dict, agent_id: str) -> List[Dict]:
+    def get_allied_deaths(self, event_log: List[Dict], agent_id: str) -> List[Dict]:
         death_events = []
         agent_owner = self.env.agents_dict[agent_id].player_name
         _, _, destroy_events = self.parse_event_log(event_log)

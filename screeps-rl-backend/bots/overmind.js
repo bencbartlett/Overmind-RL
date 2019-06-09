@@ -26504,6 +26504,77 @@ class RemoteDebugger {
     }
 }
 
+/**
+ * NeuralZerg augments CombatZerg with some additional simplified actions suitable for use in reinforcement learning
+ * training scenarios
+ */
+let NeuralZerg = class NeuralZerg extends CombatZerg {
+    constructor(creep, notifyWhenAttacked = true) {
+        super(creep, notifyWhenAttacked);
+        this.isBot = creep.name.includes('_BOT');
+    }
+    approachHostiles() {
+        const approach = _.map(this.room.hostiles, hostile => ({ pos: hostile.pos, range: 1 }));
+        return Movement.combatMove(this, approach, []);
+    }
+    avoidHostiles() {
+        const avoid = _.map(this.room.hostiles, hostile => ({ pos: hostile.pos, range: 4 }));
+        return Movement.combatMove(this, [], avoid);
+    }
+    maneuver(approach, avoid) {
+        // TODO
+    }
+    autoEngage(combatTarget) {
+        const target = combatTarget ? [combatTarget.creep] : undefined;
+        // Do standard melee, ranged, and heal actions
+        if (this.getActiveBodyparts(ATTACK) > 0) {
+            this.autoMelee(target); // Melee should be performed first
+        }
+        if (this.getActiveBodyparts(RANGED_ATTACK) > 0) {
+            this.autoRanged(target);
+        }
+        if (this.canExecute('heal')) {
+            this.autoHeal(this.canExecute('rangedHeal'));
+        }
+    }
+};
+NeuralZerg = __decorate([
+    profile
+], NeuralZerg);
+
+class TrainingOpponents {
+    /**
+     * Simple combat behavior to train against. Every creep just chases the nearest opponent and attacks them.
+     */
+    static simpleCombat(zerg) {
+        const closestOpponent = zerg.pos.findClosestByRange(zerg.room.hostiles);
+        if (closestOpponent) {
+            zerg.creep.moveTo(closestOpponent);
+            zerg.attack(closestOpponent);
+            zerg.rangedAttack(closestOpponent);
+            zerg.heal(zerg);
+        }
+    }
+    /**
+     * Stupid combat behavior. Moves in a random direction and attacks a random target in range if combat is allowed
+     */
+    static stupidCombat(zerg, allowAttack = false, allowHeal = false) {
+        const direction = _.random(1, 8);
+        zerg.move(direction);
+        if (allowAttack) {
+            const meleeTarget = _.sample(zerg.pos.findInRange(zerg.room.hostiles, 1));
+            if (meleeTarget)
+                zerg.attack(meleeTarget);
+            const rangedTarget = _.sample(zerg.pos.findInRange(zerg.room.hostiles, 3));
+            if (rangedTarget)
+                zerg.rangedAttack(rangedTarget);
+        }
+        if (allowHeal) {
+            zerg.heal(zerg);
+        }
+    }
+}
+
 /*
 
  _____  _    _ _______  ______ _______ _____ __   _ ______
@@ -26522,16 +26593,13 @@ class ActionParser {
      * Parse an individual action from its serialized format and command the actor to execute it.
      * Returns whether the action was valid.
      */
-    static parseAction(actor, action) {
+    static parseAction(actor, action, autoEngage = true) {
         const [command, id] = action;
         const targ = typeof id == 'string' ? Game.getObjectById(id) : null;
         switch (command) {
             case 'move':
                 actor.move(id);
                 break;
-            // case 'moveTo':
-            //  if (targ) creep.moveTo(targ);
-            //  break;
             case 'goTo':
                 if (targ)
                     actor.goTo(targ);
@@ -26559,11 +26627,20 @@ class ActionParser {
                 if (targ)
                     actor.rangedHeal(targ);
                 break;
+            case 'approachHostiles':
+                actor.approachHostiles();
+                break;
+            case 'avoidHostiles':
+                actor.avoidHostiles();
+                break;
             case 'noop':
                 break;
             default:
                 console.log(`[${Game.time}] Invalid command: ${command}!`);
                 return false;
+        }
+        if (autoEngage) {
+            actor.autoEngage();
         }
         return true;
     }
@@ -26606,23 +26683,42 @@ class ActionParser {
     /**
      * Wraps all creeps as Zerg
      */
-    static wrapZerg() {
-        return _.mapValues(Game.creeps, creep => new CombatZerg(creep));
+    static getAllActors() {
+        return _.mapValues(Game.creeps, creep => new NeuralZerg(creep));
     }
     /**
      * Read action commands from the designated memory segment, parse them, and run them
      */
     static run() {
-        const actors = ActionParser.wrapZerg();
+        // Wrap all creep as NeuralZerg and partition actors into controllable and uncontrollable (scripted) sets
+        const allActors = ActionParser.getAllActors();
+        const controllableActors = {};
+        const uncontrollableActors = {};
+        for (const name in allActors) {
+            const actor = allActors[name];
+            if (allActors[name].isBot) {
+                uncontrollableActors[name] = actor;
+            }
+            else {
+                controllableActors[name] = actor;
+            }
+        }
+        // Parse memory and relay actions to controllable actors
         const raw = RawMemory.segments[RL_ACTION_SEGMENT];
         if (raw != undefined && raw != '') {
             const actions = JSON.parse(raw);
-            ActionParser.parseActions(actors, actions);
+            ActionParser.parseActions(controllableActors, actions);
         }
         else {
-            console.log(`[${Game.time}]: No actions received!`);
+            if (_.size(controllableActors) > 0) {
+                console.log(`[${Game.time}]: No actions received!`);
+            }
         }
-        RawMemory.setActiveSegments([RL_ACTION_SEGMENT]); // keep this segment requested during training
+        // Run uncontrollable actors on a script
+        for (const name in uncontrollableActors) {
+            const bot = uncontrollableActors[name];
+            TrainingOpponents.stupidCombat(bot);
+        }
         // Log state according to verbosity
         if (RL_TRAINING_VERBOSITY == 0) {
             // no logigng
@@ -26635,6 +26731,9 @@ class ActionParser {
         else if (RL_TRAINING_VERBOSITY == 2) {
             this.logState(raw);
         }
+        // Clear the segment and keep it requested
+        RawMemory.segments[RL_ACTION_SEGMENT] = '';
+        RawMemory.setActiveSegments([RL_ACTION_SEGMENT]);
     }
 }
 

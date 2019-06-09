@@ -129,7 +129,7 @@ class ScreepsEnvironment {
 	 */
 	async resetRoom(roomName, creepConfig = null) {
 
-		const VERBOSE = false;
+		const VERBOSE = true;
 		if (VERBOSE) {
 			const gameTime = await this.server.world.gameTime;
 			console.log(`[${gameTime}] Resetting environment ${this.index}, room ${roomName}`);
@@ -144,7 +144,7 @@ class ScreepsEnvironment {
 		if (creepConfig != null) {
 			// Manually specified list of creep initial setups
 			for (let creep of creepConfig) {
-				let {player_name, creep_index, body, x_init, y_init} = creep;
+				let {player_name, creep_index, body, x_init, y_init, is_bot} = creep;
 
 				let x, y;
 				if (x_init == null || y_init == null) {
@@ -163,8 +163,12 @@ class ScreepsEnvironment {
 				}
 
 				let name = `${player_name}_${creep_index}:${roomName}`;
+				if (is_bot) {
+					name += '_BOT';
+					// console.log(`Creating bot creep ${name}`);
+				}
 
-				await this.createCreep(agent, roomName, x, y, name, body);
+				await this.createCreep(agent, roomName, x, y, name, body, is_bot);
 			}
 		} else {
 			let [x1, y1] = await this.server.world.getOpenPosition(roomName);
@@ -307,13 +311,18 @@ class ScreepsEnvironment {
 		return body;
 	}
 
-	async createCreep(agent, room, x, y, name = undefined, body = undefined, lifetime = 300) {
+	async createCreep(agent, room, x, y, name = undefined, body = undefined, isBot = false, lifetime = 300) {
 
 		if (!name) {
 			name = await this.generateCreepName(agent, room);
 		}
 		if (!body) {
 			body = ScreepsEnvironment.generateCreepBody();
+		}
+
+		if (isBot && !name.includes('_BOT')) {
+			name = name + '_BOT';
+			console.log(`Warning: bot-controlled agents must have "_BOT" at end of name. Changing name to ${name}`);
 		}
 
 		const energyCapacity = _.sumBy(body, part => part.type === 'carry' ? 50 : 0);

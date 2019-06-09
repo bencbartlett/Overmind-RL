@@ -15,19 +15,18 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
     def get_spaces(agents):
 
         observation_space = Tuple(
-            (DictSpace(
+            [DictSpace(
                 {
-                    "xy": Box(low=0, high=49, shape=(2,), dtype=np.int8),
+                    "xy": Box(low=0, high=49, shape=(2,), dtype=np.uint8),
                     "dxdy": Box(low=-49, high=49, shape=(2,), dtype=np.int8),
-                    "hits": Box(low=0, high=100 * 50, shape=(1,), dtype=np.int8),
-                    # "hits_max": Box(low=0, high=100 * 50, shape=(1,), dtype=np.int8),
+                    "hits": Box(low=0, high=100 * 50, shape=(1,), dtype=np.uint16),
+                    # "hits_max": Box(low=0, high=100 * 50, shape=(1,), dtype=np.uint16),
                     "hits_frac": Box(low=0, high=1, shape=(1,), dtype=np.float16),
-                    "attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.int8),
-                    "ranged_attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.int8),
-                    "heal_potential": Box(low=0, high=50, shape=(1,), dtype=np.int8),
+                    "attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
+                    "ranged_attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
+                    "heal_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
                 }
-            ),) * len(agents)
-        )
+            )] * len(agents))
         action_space = Discrete(2)
 
         return observation_space, action_space
@@ -51,9 +50,9 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
             if part["hits"] > 0:
                 potentials[part["type"]] = potentials.get(part["type"], 0) + 1
 
-        attack_potential = potentials["attack"]
-        ranged_attack_potential = potentials["rangedAttack"]
-        heal_potential = potentials["heal"]
+        attack_potential = potentials.get("attack", 0)
+        ranged_attack_potential = potentials.get("rangedAttack", 0)
+        heal_potential = potentials.get("heal", 0)
 
         return {
             "xy": np.array([x, y]),
@@ -78,7 +77,8 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id)
         all_creeps = [*enemies, *allies, me]
-        return np.array([self.get_features(creep, me) for creep in all_creeps])
+        return [self.get_features(creep, me) for creep in all_creeps]
+        # return np.array()
 
         # return np.concatenate([
         #     self.get_features(creep, me) for creep in [*enemies, *allies, me]
@@ -112,7 +112,7 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         # Add distance penalties
         for creep in [*enemies, *allies]:
-            x, y, dx, dy, hits, hits_max, hits_frac, _, _, _ = self.get_features(creep, me)
+            dx, dy = self.get_features(creep, me)["dxdy"]
             reward += DISTANCE_PENALTY * max(abs(dx), abs(dy))
 
         # Add damage rewards

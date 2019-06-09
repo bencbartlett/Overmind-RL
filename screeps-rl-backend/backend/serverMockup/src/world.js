@@ -211,7 +211,8 @@ class World {
 	 */
 	async getEventLog(roomName) {
 		const {env} = await this.load();
-		return await env.hget(env.keys.ROOM_EVENT_LOG, roomName);
+		const eventLog = await env.hget(env.keys.ROOM_EVENT_LOG, roomName);
+		return JSON.parse(eventLog);
 	}
 
 	/**
@@ -227,7 +228,8 @@ class World {
 	 */
 	async getAllEventLogs() {
 		const {env} = await this.load();
-		return await env.get(env.keys.ROOM_EVENT_LOG);
+		const allEventLogs = await env.get(env.keys.ROOM_EVENT_LOG);
+		return _.mapValues(allEventLogs, log => JSON.parse(log));
 	}
 
 	/**

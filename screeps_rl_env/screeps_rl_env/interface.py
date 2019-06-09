@@ -132,7 +132,7 @@ class ScreepsInterface:
         :param room: the room name to fetch
         :return: Room.eventLog as a list
         """
-        return self.c.getEventLog(room)
+        return self.c.getEventLog(room)#json.loads(self.c.getEventLog(room))
 
     def _get_all_room_event_logs(self):
         """
@@ -140,7 +140,7 @@ class ScreepsInterface:
         :param room: the room name to fetch
         :return: Room.eventLog as a list
         """
-        return self.c.getAllEventLogs()
+        return self.c.getAllEventLogs() #json.loads(self.c.getAllEventLogs())
 
     def get_room_state(self, room):
         """

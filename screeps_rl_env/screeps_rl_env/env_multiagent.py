@@ -1,7 +1,7 @@
+from pprint import pprint
 from time import sleep
 from typing import Type, Union, Dict, List
 
-import gym
 import numpy as np
 from ray.rllib import MultiAgentEnv
 from ray.rllib.env import EnvContext
@@ -24,17 +24,27 @@ class CreepAgent:
     Wrapper class which tracks creep properties
     """
 
-    def __init__(self, player_index: int, creep_index: int, body: List[Dict] = None, x_init=None, y_init=None):
+    def __init__(self,
+                 player_index: int,
+                 creep_index: int,
+                 is_bot=False,
+                 body: List[Dict] = None,
+                 x_init=None,
+                 y_init=None):
         self.player_index = player_index
-        self.player_name = "Agent{}".format(player_index)
         self.creep_index = creep_index
+        self.is_bot = is_bot
+        self.player_name = "Agent{}".format(player_index)
         self.agent_id = "{}_{}".format(self.player_name, self.creep_index)
         self.body = body
         self.x_init = x_init
         self.y_init = y_init
 
     def get_full_name(self, room) -> str:
-        return "{}_{}:{}".format(self.player_name, self.creep_index, room)
+        name = "{}_{}:{}".format(self.player_name, self.creep_index, room)
+        if self.is_bot:
+            name += "_BOT"
+        return name
 
     def serialize(self) -> Dict:
         return {
@@ -43,6 +53,7 @@ class CreepAgent:
             "body": self.body,
             "x_init": self.x_init,
             "y_init": self.y_init,
+            "is_bot": self.is_bot
         }
 
 
@@ -69,11 +80,13 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
         # Register agents
         if 'agents' in env_config:
-            self.agents = env_config['agents']
+            self.agents_all = env_config['agents']
+            self.agents_controllable = list(filter(lambda agent: not agent.is_bot, self.agents_all))
         else:
             print("USING DEFAULT AGENTS")
-            self.agents = DEFAULT_AGENT_CONFIG
-        self.agents_dict = {agent.agent_id: agent for agent in self.agents}
+            self.agents_all = DEFAULT_AGENT_CONFIG
+            self.agents_controllable = list(filter(lambda agent: not agent.is_bot, self.agents_all))
+        self.agents_dict = {agent.agent_id: agent for agent in self.agents_controllable}
 
         # Backend initialization, usually ignored
         self.use_backend = use_backend
@@ -111,7 +124,7 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
             self.reset()
 
         # TODO: hardcoded
-        self.observation_space, self.action_space = ScreepsMultiAgentEnv.get_spaces(self.agents)
+        self.observation_space, self.action_space = ScreepsMultiAgentEnv.get_spaces(self.agents_all, processor=processor)
 
         # # Reset to get desired creep config
         # self.reset()
@@ -122,8 +135,8 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         return processor.get_spaces(agents)
 
     def reset(self):
-        self.interface.reset_room(self.room, [agent.serialize() for agent in self.agents])
-        # self.time = self.interface.tick()
+        creep_config = [agent.serialize() for agent in self.agents_all]
+        self.interface.reset_room(self.room, creep_config)
         self.state = self.interface.get_room_state(self.room)
         room_objects = self.state["roomObjects"]
         self.id_ownership = {}
