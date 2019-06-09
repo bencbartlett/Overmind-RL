@@ -14,15 +14,6 @@ class ScreepsProcessor(ABC):
         self.env = env
 
     @abstractmethod
-    def process_state(self, room_state: Dict) -> np.array:
-        """
-        Process the room state
-        :param room_state:
-        :return:
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def process_action(self, action: int) -> Dict:
         """
         Placeholder function for processing an action
@@ -32,7 +23,16 @@ class ScreepsProcessor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def process_reward(self, observation: np.ndarray) -> float:
+    def get_observation(self, room_state: Dict) -> np.array:
+        """
+        Given a room state, yield the observation
+        :param room_state:
+        :return:
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_reward(self, observation: np.ndarray) -> float:
         """
         Process the observation made in step() and return a reward
         :param observation: any
@@ -41,7 +41,7 @@ class ScreepsProcessor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def process_observation(self, state: Dict) -> Tuple[np.ndarray, float, bool, Dict]:
+    def process_state(self, state: Dict) -> Tuple[np.ndarray, float, bool, Dict]:
         """
         Returns the observation from a room given the state after running self.interface.tick()
         :param state: dict, room state

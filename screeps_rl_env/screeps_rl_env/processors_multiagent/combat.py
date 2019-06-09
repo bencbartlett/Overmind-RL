@@ -14,28 +14,40 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
     @staticmethod
     def get_spaces(agents):
 
-        observation_space = Tuple(
-            [DictSpace(
-                {
-                    "xy": Box(low=0, high=49, shape=(2,), dtype=np.uint8),
-                    "dxdy": Box(low=-49, high=49, shape=(2,), dtype=np.int8),
-                    "hits": Box(low=0, high=100 * 50, shape=(1,), dtype=np.uint16),
-                    # "hits_max": Box(low=0, high=100 * 50, shape=(1,), dtype=np.uint16),
-                    "hits_frac": Box(low=0, high=1, shape=(1,), dtype=np.float16),
-                    "attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
-                    "ranged_attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
-                    "heal_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
-                }
-            )] * len(agents))
+        creep_features = DictSpace({
+            "xy": Box(low=0, high=49, shape=(2,), dtype=np.uint8),
+            "dxdy": Box(low=-49, high=49, shape=(2,), dtype=np.int8),
+            "hits": Box(low=0, high=100 * 50, shape=(1,), dtype=np.uint16),
+            # "hits_max": Box(low=0, high=100 * 50, shape=(1,), dtype=np.uint16),
+            "hits_frac": Box(low=0, high=1, shape=(1,), dtype=np.float16),
+            "attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
+            "ranged_attack_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
+            "heal_potential": Box(low=0, high=50, shape=(1,), dtype=np.uint16),
+        })
+
+        observation_space = Tuple([creep_features] * len(agents))
         action_space = Discrete(2)
 
         return observation_space, action_space
 
-    def get_features(self, creep: Dict, me: Dict):
+    def process_action(self, action, agent_id):
+        creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
+
+        if action == 0:
+            action_type = 'approachHostiles'
+        elif action == 1:
+            action_type = 'avoidHostiles'
+        else:
+            raise ValueError(f"Action {action} for agent_id {agent_id} is not valid!")
+
+        return {creep_name: [[action_type, None]]}
+
+    def get_features(self, creep: Dict, me: Dict) -> Dict:
         """
         Gets the feature vector of the creep
         :param creep: dictionary with all creep properties
-        :return:
+        :param me: creep to compare to for computing various parameters, e.g. dx, dy
+        :return: features for the creep
         """
         x, y = creep["x"], creep["y"]
         dx, dy = x - me["x"], y - me["y"]
@@ -67,12 +79,14 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         # return x, y, dx, dy, hits, hits_max, hits_frac, attack_potential, ranged_attack_potential, heal_potential
 
-    def process_state(self, room_state, agent_id):
+    def get_observation(self, room_state, agent_id):
         room_objects = room_state["roomObjects"]
+        event_log = room_state["eventLog"]
 
         tombstones_present = any(filter(lambda obj: obj['type'] == 'tombstone', room_objects))
 
         if tombstones_present:
+            print(list(filter(lambda obj: obj['type'] == 'tombstone', room_objects)))
             return None
 
         enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id)
@@ -84,19 +98,7 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         #     self.get_features(creep, me) for creep in [*enemies, *allies, me]
         # ])
 
-    def process_action(self, action, agent_id):
-        creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
-
-        if action == 0:
-            action_type = 'approachHostiles'
-        elif action == 1:
-            action_type = 'avoidHostiles'
-        else:
-            raise ValueError(f"Action {action} for agent_id {agent_id} is not valid!")
-
-        return {creep_name: [[action_type, None]]}
-
-    def process_reward(self, room_state, agent_id):
+    def get_reward(self, room_state, agent_id):
 
         DISTANCE_PENALTY = -0.001
         DAMAGE_REWARD = 1 / 100 * 1
@@ -125,12 +127,12 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         return reward
 
-    def process_observation(self, room_state, agent_id):
+    def process_state(self, room_state, agent_id):
         """Returns the observation from a room given the state after running self.interface.tick()"""
-        ob = self.process_state(room_state, agent_id)
+        ob = self.get_observation(room_state, agent_id)
 
         if ob is not None:
             self.prev_ob[agent_id] = ob
-            return ob, self.process_reward(room_state, agent_id), False, {}
+            return ob, self.get_reward(room_state, agent_id), False, {}
         else:
             return self.prev_ob[agent_id], 0, True, {}

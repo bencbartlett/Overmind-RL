@@ -101,14 +101,14 @@ class ScreepsEnv(gym.Env):
 
         self.state = self.interface.get_room_state(self.room)
 
-        return self.processor.process_observation(self.state)
+        return self.processor.process_state(self.state)
 
     def reset(self):
         """Reset the server environment"""
         self.interface.reset()
         self.interface.tick()
         state = self.interface.get_room_state(self.room)
-        return self.processor.process_state(state)
+        return self.processor.get_observation(state)
 
     def reset_soft(self):
         self.interface.reset_room(self.room)

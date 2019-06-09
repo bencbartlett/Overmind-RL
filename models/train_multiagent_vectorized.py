@@ -107,7 +107,7 @@ if __name__ == "__main__":
         #         "num_workers": 0,
         #         "num_envs_per_worker": args.num_envs_per_worker,
         #         "env_config": {
-        #             "agents": agents,
+        #             "agents": agents_all,
         #             "use_backend": False,
         #         },
         #     }

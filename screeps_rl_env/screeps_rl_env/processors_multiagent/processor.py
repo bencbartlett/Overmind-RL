@@ -1,6 +1,6 @@
 from pprint import pprint
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 
 import numpy as np
 
@@ -36,6 +36,7 @@ class ScreepsMultiAgentProcessor(ABC):
         from screeps_rl_env import ScreepsMultiAgentEnv  # local import needed to prevent circular dependencies
         self.env: ScreepsMultiAgentEnv = env
         self.prev_ob: Dict[str, np.ndarray] = {}
+        self.feature_cache: Dict[str, Any] = {} # cache of { [creep._id] : last observed features }
 
     @staticmethod
     @abstractmethod
@@ -169,19 +170,9 @@ class ScreepsMultiAgentProcessor(ABC):
         return death_events
 
     @abstractmethod
-    def process_state(self, room_state: Dict, agent_id: str) -> np.array:
-        """
-        Process the room state
-        :param room_state: the state of the room
-        :param agent_id: the name of the creep to receive the processed input
-        :return:
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def process_action(self, action: int, agent_id: str) -> Dict:
         """
-        Placeholder function for processing an action
+        Process an action, returning a command to be written to Overmind memory to tell the agent what to do
         :param action: int, direction to move (0-7, inclusive)
         :param agent_id: the name of the creep to receive the processed input
         :return: JSON-formatted command to tell the creep to move
@@ -189,19 +180,29 @@ class ScreepsMultiAgentProcessor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def process_reward(self, room_state: Dict, agent_id: str) -> float:
+    def get_observation(self, room_state: Dict, agent_id: str) -> Any:
         """
-        Process the observation made in step() and return a reward
-        :param observation: any
+        Yield the observation for the current tick given a room state and agent id
+        :param room_state: the state of the room
+        :param agent_id: the name of the creep to receive the processed input
+        :return:
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_reward(self, room_state: Dict, agent_id: str) -> float:
+        """
+        Yield the reward for the current tick given a room state and agent id
+        :param room_state: the state of the room
         :param agent_id: the name of the creep to receive the processed input
         :return: reward (float)
         """
         raise NotImplementedError
 
     @abstractmethod
-    def process_observation(self, room_state: Dict, agent_id: str) -> Tuple[np.ndarray, float, bool, Dict]:
+    def process_state(self, room_state: Dict, agent_id: str) -> Tuple[Any, float, bool, Dict]:
         """
-        Returns the observation from a room given the state after running self.interface.tick()
+        Returns the observation, reward, termination, and info for an agent given the state of the room
         :param room_state: dict, room state
         :param agent_id: the name of the creep to receive the processed input
         :return: ob, reward, done, info

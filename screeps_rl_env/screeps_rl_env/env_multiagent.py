@@ -1,4 +1,3 @@
-from pprint import pprint
 from time import sleep
 from typing import Type, Union, Dict, List
 
@@ -112,7 +111,8 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         self.room = self.interface.add_env(self.vector_index)
         self.time = 0
 
-        self.id_ownership = {}
+        self.id_ownership = {}  # map of { [game id]: user owning the object }
+        self.user_id_to_username = {}  # map of { [game user hash]: username }
         self.state = None
 
         # Reset if running in non-vector mode (allow vector env to reset if interface is specified)
@@ -123,11 +123,8 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
                 self.time = self.interface.tick()
             self.reset()
 
-        # TODO: hardcoded
-        self.observation_space, self.action_space = ScreepsMultiAgentEnv.get_spaces(self.agents_all, processor=processor)
-
-        # # Reset to get desired creep config
-        # self.reset()
+        self.observation_space, self.action_space = ScreepsMultiAgentEnv.get_spaces(self.agents_all,
+                                                                                    processor=processor)
 
     @staticmethod
     def get_spaces(agents: List[CreepAgent],
@@ -135,17 +132,29 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
         return processor.get_spaces(agents)
 
     def reset(self):
+        """
+        Reset the room to the configured state and rebuild mappings of creeps -> user and user_id -> user
+        :return: observations for each (controllable) agent
+        """
         creep_config = [agent.serialize() for agent in self.agents_all]
         self.interface.reset_room(self.room, creep_config)
+
         self.state = self.interface.get_room_state(self.room)
         room_objects = self.state["roomObjects"]
+
         self.id_ownership = {}
+        self.user_id_to_username = {}
+
         for obj in room_objects:
             id = obj.get("_id")
             owner = obj.get("username")
+            user_id = obj.get("user")
             if id is not None and owner is not None:
                 self.id_ownership[id] = owner
-        return {id: self.processor.process_state(self.state, id) for id in self.agents_dict.keys()}
+            if user_id is not None and owner is not None:
+                self.user_id_to_username[user_id] = owner
+
+        return {id: self.processor.get_observation(self.state, id) for id in self.agents_dict.keys()}
 
     def step_pre_tick(self, action_dict: Dict):
         # build a dictionary of {username: {creepName: [list of actions and arguments] } }
@@ -162,7 +171,7 @@ class ScreepsMultiAgentEnv(MultiAgentEnv):
 
         obs, rewards, dones, infos = {}, {}, {}, {}
         for id in action_dict.keys():
-            obs[id], rewards[id], dones[id], infos[id] = self.processor.process_observation(room_state, id)
+            obs[id], rewards[id], dones[id], infos[id] = self.processor.process_state(room_state, id)
         dones["__all__"] = all(dones.values())
 
         return obs, rewards, dones, infos

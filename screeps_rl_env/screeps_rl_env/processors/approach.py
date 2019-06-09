@@ -8,7 +8,7 @@ class ApproachProcessor(ScreepsProcessor):
     Train a creep to approach the other creep in the room using base movement intents
     """
 
-    def process_state(self, room_state):
+    def get_observation(self, room_state):
         terrain = room_state["terrain"]
         room_objects = room_state["roomObjects"]
         event_log = room_state["eventLog"]
@@ -33,16 +33,16 @@ class ApproachProcessor(ScreepsProcessor):
         creep_name = "Agent1_{}:{}".format(creep_id, self.env.room)
         return {creep_name: [["move", int(action) + 1]]}
 
-    def process_reward(self, observation):
+    def get_reward(self, observation):
         my_x, my_y, foe_x, foe_y = observation
         return 1 / 50 * (50 - max(abs(foe_x - my_x), abs(foe_y - my_y)))
 
-    def process_observation(self, state):
+    def process_state(self, state):
         """Returns the observation from a room given the state after running self.interface.tick()"""
-        ob = self.process_state(state)
+        ob = self.get_observation(state)
 
         if ob is not None:
-            return ob, self.process_reward(ob), False, {}
+            return ob, self.get_reward(ob), False, {}
         else:
             ob = np.array([25, 25, 25, 25])
             return ob, 0, True, {}
