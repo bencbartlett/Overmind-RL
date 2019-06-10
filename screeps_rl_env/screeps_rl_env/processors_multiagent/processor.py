@@ -1,4 +1,3 @@
-from pprint import pprint
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple, List, Any
 
@@ -36,7 +35,6 @@ class ScreepsMultiAgentProcessor(ABC):
         from screeps_rl_env import ScreepsMultiAgentEnv  # local import needed to prevent circular dependencies
         self.env: ScreepsMultiAgentEnv = env
         self.prev_ob: Dict[str, np.ndarray] = {}
-        self.feature_cache: Dict[str, Any] = {} # cache of { [creep._id] : last observed features }
 
     @staticmethod
     @abstractmethod
@@ -48,13 +46,17 @@ class ScreepsMultiAgentProcessor(ABC):
         """
         raise NotImplementedError
 
-    def get_creeps(self, room_objects: List) -> List[Dict]:
+    def get_creeps(self, room_objects: List, include_tombstones=True) -> List[Dict]:
         """
         Get a list of room objects which are creeps
         :param room_objects: room objects for the environment room
-        :return: objects which are creeps
+        :param include_tombstones: whether or not to include tombstones in the return (to track dead creeps)
+        :return: objects which are creeps (or tombstones)
         """
-        return list(filter(lambda obj: obj['type'] == 'creep', room_objects))
+        if include_tombstones:
+            return list(filter(lambda obj: obj['type'] == 'creep' or obj['type'] == 'tombstone', room_objects))
+        else:
+            return list(filter(lambda obj: obj['type'] == 'creep', room_objects))
 
     def get_allies(self, room_objects: List, agent_id: str, include_self=False) -> List[Dict]:
         """
@@ -90,10 +92,12 @@ class ScreepsMultiAgentProcessor(ABC):
 
         return list(filter(lambda creep: creep['username'] == owner, all_creeps))
 
-    def get_enemies_allies_me(self, room_objects: List, agent_id: str) -> Tuple[List[Dict], List[Dict], Dict]:
+    def get_enemies_allies_me(self, room_objects: List, agent_id: str,
+                              include_tombstones=True) -> Tuple[List[Dict], List[Dict], Dict]:
         """
         Given room objects and an agent id, return a tuple of (enemy creeps, allied creeps, self) sorted by name
         :param room_objects: room objects for the environment room (can contain non-creep objects)
+        :param include_tombstones: whether or not to include tombstones in the return (to track dead creeps)
         :param agent_id: id of the agent to be compared to
         :return: all enemy creeps
         """
@@ -102,23 +106,31 @@ class ScreepsMultiAgentProcessor(ABC):
         creep_name = creep.get_full_name(self.env.room)
         creep_owner = creep.player_name
 
-        all_creeps = self.get_creeps(room_objects)
+        all_creeps = self.get_creeps(room_objects, include_tombstones=include_tombstones)
 
         enemies, allies, me = [], [], None
 
         for creep in all_creeps:
-            if creep['username'] != creep_owner:
+            username = creep.get('username') or self.env.user_id_to_username[creep['user']]
+            if username != creep_owner:
                 enemies.append(creep)
             else:
-                if creep['name'] != creep_name:
+                other_creep_name = creep.get('name') or creep.get('creepName')
+                if other_creep_name != creep_name:
                     allies.append(creep)
                 else:
                     me = creep
 
-        enemies.sort(key=lambda creep: creep['name'])
-        allies.sort(key=lambda creep: creep['name'])
+        enemies.sort(key=lambda creep: creep.get('name') or creep.get('creepName'))
+        allies.sort(key=lambda creep: creep.get('name') or creep.get('creepName'))
 
         return enemies, allies, me
+
+    def is_agent_alive(self, room_objects: List, agent_id: str) -> bool:
+        creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
+
+        creeps = self.get_creeps(room_objects, include_tombstones=False)
+        return any(other_name == creep_name for other_name in map(lambda creep: creep['name'], creeps))
 
     def parse_event_log(self, event_log: List[Dict]):
         attack_events, heal_events, destroy_events = [], [], []
@@ -146,6 +158,21 @@ class ScreepsMultiAgentProcessor(ABC):
             if event["objectId"] == creep_object_id:
                 damage_dealt += event["data"]["damage"]
         return damage_dealt
+
+    def get_deaths_contributed_to(self, event_log: List[Dict], creep_object_id: str) -> List[Dict]:
+        """
+        Gets a list of death events which the creep directly contributed to
+        :param event_log: event log for the room
+        :param creep_object_id: the Game object id for the creep (NOT Creep.agent_id)
+        :return: amount of damage dealt
+        """
+        attack_events, _, death_events = self.parse_event_log(event_log)
+        attack_targets = []
+        for attack_event in attack_events:
+            if attack_event["objectId"] == creep_object_id:
+                attack_targets.append(attack_event["data"]["targetId"])
+
+        return list(filter(lambda death_event: death_event["objectId"] in attack_targets, death_events))
 
     def get_enemy_deaths(self, event_log: List[Dict], agent_id: str) -> List[Dict]:
         death_events = []

@@ -135,7 +135,7 @@ class ScreepsEnvironment {
 			console.log(`[${gameTime}] Resetting environment ${this.index}, room ${roomName}`);
 		}
 
-		await this.deleteRoomCreeps(roomName);
+		await this.deleteRoomCreeps(roomName, true);
 
 		if (creepConfig) {
 			creepConfig = JSON.parse(creepConfig);
@@ -459,8 +459,8 @@ class ScreepsEnvironment {
 	/**
 	 * Delete all creeps within a room
 	 */
-	async deleteRoomCreeps(roomName) {
-		return await this.server.world.deleteRoomCreeps(roomName);
+	async deleteRoomCreeps(roomName, deleteTombstones = true) {
+		return await this.server.world.deleteRoomCreeps(roomName, deleteTombstones);
 	}
 
 	async getEventLog(roomName) {
@@ -480,7 +480,12 @@ class ScreepsEnvironment {
 	}
 
 	async tick() {
-		return await this.server.tick();
+		const gameTime = await this.server.tick();
+		const PRESERVE_TOMBSTONES = true;
+		if (PRESERVE_TOMBSTONES && gameTime % 4 === 0) {
+			await this.server.world.preserveTombstones();
+		}
+		return gameTime;
 	}
 
 	async startServer() {

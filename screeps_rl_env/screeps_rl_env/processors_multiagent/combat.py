@@ -77,21 +77,49 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
             "heal_potential": np.array([heal_potential]),
         }
 
-        # return x, y, dx, dy, hits, hits_max, hits_frac, attack_potential, ranged_attack_potential, heal_potential
+    def get_features_tombstone(self, tombstone: Dict, me: Dict) -> Dict:
+        """
+        Gets the feature vector of the tombstone
+        :param tombstone: dictionary with all tombstone properties
+        :param me: creep to compare to for computing various parameters, e.g. dx, dy
+        :return: features for the creep
+        """
+        x, y = tombstone["x"], tombstone["y"]
+        dx, dy = x - me["x"], y - me["y"]
+
+        hits = 0
+        hits_max = 100 * len(tombstone["creepBody"])
+        hits_frac = hits / hits_max
+
+        attack_potential = 0
+        ranged_attack_potential = 0
+        heal_potential = 0
+
+        return {
+            "xy": np.array([x, y]),
+            "dxdy": np.array([dx, dy]),
+            "hits": np.array([hits]),
+            # "hits_max": hits_max,
+            "hits_frac": np.array([hits_frac]),
+            "attack_potential": np.array([attack_potential]),
+            "ranged_attack_potential": np.array([ranged_attack_potential]),
+            "heal_potential": np.array([heal_potential]),
+        }
 
     def get_observation(self, room_state, agent_id):
         room_objects = room_state["roomObjects"]
-        event_log = room_state["eventLog"]
 
         tombstones_present = any(filter(lambda obj: obj['type'] == 'tombstone', room_objects))
 
         if tombstones_present:
             print(list(filter(lambda obj: obj['type'] == 'tombstone', room_objects)))
-            return None
+            # return None
 
-        enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id)
+        enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id, include_tombstones=True)
         all_creeps = [*enemies, *allies, me]
-        return [self.get_features(creep, me) for creep in all_creeps]
+        return [self.get_features(creep, me) if creep['type'] == 'creep' else
+                self.get_features_tombstone(creep, me)
+                for creep in all_creeps]
         # return np.array()
 
         # return np.concatenate([
@@ -103,14 +131,17 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         DISTANCE_PENALTY = -0.001
         DAMAGE_REWARD = 1 / 100 * 1
         ENEMY_DEATH_REWARD = 10
-        ALLIED_DEATH_PENALTY = -5
+        ENEMY_DEATH_NONCONTRIB_REWARD = 2
+        ALLIED_DEATH_PENALTY = -2
+        MY_DEATH_PENALTY = -7
+        VICTORY_REWARD = 50
 
         reward = 0
 
         room_objects = room_state["roomObjects"]
         event_log = room_state["eventLog"]
 
-        enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id)
+        enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id, include_tombstones=False)
 
         # Add distance penalties
         for creep in [*enemies, *allies]:
@@ -123,7 +154,12 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         # Add death rewards
         reward += ENEMY_DEATH_REWARD * len(self.get_enemy_deaths(event_log, agent_id))
+        # reward += ENEMY_DEATH_REWARD * len(self.get_deaths_contributed_to(event_log, my_creep_id))
         reward += ALLIED_DEATH_PENALTY * len(self.get_allied_deaths(event_log, agent_id))
+
+        # Add victory rewards
+        if len(enemies) == 0:
+            reward += VICTORY_REWARD
 
         return reward
 
@@ -131,8 +167,15 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         """Returns the observation from a room given the state after running self.interface.tick()"""
         ob = self.get_observation(room_state, agent_id)
 
-        if ob is not None:
-            self.prev_ob[agent_id] = ob
+        room_objects = room_state["roomObjects"]
+
+        if self.is_agent_alive(room_objects, agent_id):
             return ob, self.get_reward(room_state, agent_id), False, {}
         else:
-            return self.prev_ob[agent_id], 0, True, {}
+            return ob, 0, True, {}
+
+        # if ob is not None:
+        #     self.prev_ob[agent_id] = ob
+        #     return ob, self.get_reward(room_state, agent_id), False, {}
+        # else:
+        #     return self.prev_ob[agent_id], 0, True, {}

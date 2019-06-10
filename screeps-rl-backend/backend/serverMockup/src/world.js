@@ -206,6 +206,11 @@ class World {
 		}
 	}
 
+	async preserveTombstones() {
+		const gameTime = await this.gameTime;
+		await db['rooms.objects'].update({type: 'tombstone'}, {$set: {decayTime: gameTime + 1000}});
+	}
+
 	/**
 	 * Gets an event log for a specified room
 	 */
