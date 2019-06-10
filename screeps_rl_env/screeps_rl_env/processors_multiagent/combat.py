@@ -5,6 +5,14 @@ from gym.spaces import Dict as DictSpace, Discrete, Box, Tuple
 
 from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor
 
+DISTANCE_PENALTY = -0.001
+DAMAGE_REWARD = 1 / 100 * 1
+ENEMY_DEATH_REWARD = 10
+ENEMY_DEATH_NONCONTRIB_REWARD = 2
+ALLIED_DEATH_PENALTY = -2
+MY_DEATH_PENALTY = -7
+VICTORY_REWARD = 50
+
 
 class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
     """
@@ -128,14 +136,6 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
     def get_reward(self, room_state, agent_id):
 
-        DISTANCE_PENALTY = -0.001
-        DAMAGE_REWARD = 1 / 100 * 1
-        ENEMY_DEATH_REWARD = 10
-        ENEMY_DEATH_NONCONTRIB_REWARD = 2
-        ALLIED_DEATH_PENALTY = -2
-        MY_DEATH_PENALTY = -7
-        VICTORY_REWARD = 50
-
         reward = 0
 
         room_objects = room_state["roomObjects"]
@@ -168,6 +168,8 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         ob = self.get_observation(room_state, agent_id)
 
         room_objects = room_state["roomObjects"]
+        # all_enemies_dead = len(self.get_enemies(room_objects, agent_id, include_tombstones=False)) == 0
+        # all_allies_dead = len(self.get_allies(room_objects, agent_id, include_self=True, include_tombstones=False)) == 0
 
         if self.is_agent_alive(room_objects, agent_id):
             return ob, self.get_reward(room_state, agent_id), False, {}

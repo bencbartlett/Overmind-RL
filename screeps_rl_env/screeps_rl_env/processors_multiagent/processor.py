@@ -58,15 +58,16 @@ class ScreepsMultiAgentProcessor(ABC):
         else:
             return list(filter(lambda obj: obj['type'] == 'creep', room_objects))
 
-    def get_allies(self, room_objects: List, agent_id: str, include_self=False) -> List[Dict]:
+    def get_allies(self, room_objects: List, agent_id: str, include_self=False, include_tombstones=False) -> List[Dict]:
         """
         Returns a list of allied creeps given room objects
         :param room_objects: room objects for the environment room
         :param agent_id: id of the agent to be compared to
         :param include_self: whether or not to include the agent itself in the list
+        :param include_tombstones: whether or not to include tombstones in the return (to track dead creeps)
         :return: all allied creeps
         """
-        all_creeps = self.get_creeps(room_objects)
+        all_creeps = self.get_creeps(room_objects, include_tombstones=include_tombstones)
 
         creep = self.env.agents_dict[agent_id]
         creep_name = creep.get_full_name(self.env.room)
@@ -79,14 +80,15 @@ class ScreepsMultiAgentProcessor(ABC):
                                              creep['name'] != creep_name,
                                all_creeps))
 
-    def get_enemies(self, room_objects: List, agent_id: str) -> List[Dict]:
+    def get_enemies(self, room_objects: List, agent_id: str, include_tombstones=False) -> List[Dict]:
         """
         Returns a list of enemy creeps given room objects
         :param room_objects: room objects for the environment room
         :param agent_id: id of the agent to be compared to
+        :param include_tombstones: whether or not to include tombstones in the return (to track dead creeps)
         :return: all enemy creeps
         """
-        all_creeps = self.get_creeps(room_objects)
+        all_creeps = self.get_creeps(room_objects, include_tombstones=include_tombstones)
 
         owner = self.env.agents_dict[agent_id].player_name
 
@@ -97,8 +99,8 @@ class ScreepsMultiAgentProcessor(ABC):
         """
         Given room objects and an agent id, return a tuple of (enemy creeps, allied creeps, self) sorted by name
         :param room_objects: room objects for the environment room (can contain non-creep objects)
-        :param include_tombstones: whether or not to include tombstones in the return (to track dead creeps)
         :param agent_id: id of the agent to be compared to
+        :param include_tombstones: whether or not to include tombstones in the return (to track dead creeps)
         :return: all enemy creeps
         """
 

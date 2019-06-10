@@ -207,6 +207,7 @@ class World {
 	}
 
 	async preserveTombstones() {
+		const {db} = await this.load();
 		const gameTime = await this.gameTime;
 		await db['rooms.objects'].update({type: 'tombstone'}, {$set: {decayTime: gameTime + 1000}});
 	}
