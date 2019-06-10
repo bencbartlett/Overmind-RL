@@ -1,7 +1,7 @@
 from typing import Dict
 
 import numpy as np
-from gym.spaces import Dict as DictSpace, Discrete, Box, Tuple
+from gym.spaces import Dict as DictSpace, Discrete, Box, Tuple, MultiBinary
 
 from screeps_rl_env.processors_multiagent import ScreepsMultiAgentProcessor
 
@@ -12,6 +12,8 @@ ENEMY_DEATH_NONCONTRIB_REWARD = 2
 ALLIED_DEATH_PENALTY = -2
 MY_DEATH_PENALTY = -7
 VICTORY_REWARD = 50
+
+USE_MANEUVER = False
 
 
 class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
@@ -34,11 +36,15 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         })
 
         observation_space = Tuple([creep_features] * len(agents))
-        action_space = Discrete(2)
+
+        if USE_MANEUVER:
+            action_space = MultiBinary(len(agents))
+        else:
+            action_space = Discrete(2)
 
         return observation_space, action_space
 
-    def process_action(self, action, agent_id):
+    def _process_approach_avoid(self, action, agent_id):
         creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
 
         if action == 0:
@@ -49,6 +55,27 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
             raise ValueError(f"Action {action} for agent_id {agent_id} is not valid!")
 
         return {creep_name: [[action_type, None]]}
+
+    def _process_maneuver(self, actions, agent_id):
+        creep_name = self.env.agents_dict[agent_id].get_full_name(self.env.room)
+
+        approach = []
+        avoid = []
+
+        for i, action in actions:
+            target_name = self.env.agents_all[i].get_full_name(self.env.room)
+            if action == 1:
+                approach.append(target_name)
+            else:
+                avoid.append(target_name)
+
+        return {creep_name: [['maneuver', [approach, avoid]]]}
+
+    def process_action(self, action, agent_id):
+        if USE_MANEUVER:
+            return self._process_maneuver(action, agent_id)
+        else:
+            return self._process_approach_avoid(action, agent_id)
 
     def get_features(self, creep: Dict, me: Dict) -> Dict:
         """
@@ -119,9 +146,8 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
 
         tombstones_present = any(filter(lambda obj: obj['type'] == 'tombstone', room_objects))
 
-        if tombstones_present:
-            print(list(filter(lambda obj: obj['type'] == 'tombstone', room_objects)))
-            # return None
+        # if tombstones_present:
+        #     print(list(filter(lambda obj: obj['type'] == 'tombstone', room_objects)))
 
         enemies, allies, me = self.get_enemies_allies_me(room_objects, agent_id, include_tombstones=True)
         all_creeps = [*enemies, *allies, me]
@@ -168,13 +194,14 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         ob = self.get_observation(room_state, agent_id)
 
         room_objects = room_state["roomObjects"]
-        # all_enemies_dead = len(self.get_enemies(room_objects, agent_id, include_tombstones=False)) == 0
-        # all_allies_dead = len(self.get_allies(room_objects, agent_id, include_self=True, include_tombstones=False)) == 0
+        all_enemies_dead = len(self.get_enemies(room_objects, agent_id, include_tombstones=False)) == 0
+        all_allies_dead = len(self.get_allies(room_objects, agent_id, include_self=True, include_tombstones=False)) == 0
+        info =  {"all_enemies_dead": all_enemies_dead, all_allies_dead: all_allies_dead}
 
         if self.is_agent_alive(room_objects, agent_id):
-            return ob, self.get_reward(room_state, agent_id), False, {}
+            return ob, self.get_reward(room_state, agent_id), False, info
         else:
-            return ob, 0, True, {}
+            return ob, 0, True, info
 
         # if ob is not None:
         #     self.prev_ob[agent_id] = ob

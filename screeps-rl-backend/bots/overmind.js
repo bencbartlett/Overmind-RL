@@ -26504,6 +26504,8 @@ class RemoteDebugger {
     }
 }
 
+const AVOID_RANGE = 4;
+const APPROACH_RANGE = 1;
 /**
  * NeuralZerg augments CombatZerg with some additional simplified actions suitable for use in reinforcement learning
  * training scenarios
@@ -26514,15 +26516,25 @@ let NeuralZerg = class NeuralZerg extends CombatZerg {
         this.isBot = creep.name.includes('_BOT');
     }
     approachHostiles() {
-        const approach = _.map(this.room.hostiles, hostile => ({ pos: hostile.pos, range: 1 }));
+        const approach = _.map(this.room.hostiles, hostile => ({ pos: hostile.pos, range: APPROACH_RANGE }));
         return Movement.combatMove(this, approach, []);
     }
     avoidHostiles() {
-        const avoid = _.map(this.room.hostiles, hostile => ({ pos: hostile.pos, range: 4 }));
+        const avoid = _.map(this.room.hostiles, hostile => ({ pos: hostile.pos, range: AVOID_RANGE }));
         return Movement.combatMove(this, [], avoid);
     }
-    maneuver(approach, avoid) {
-        // TODO
+    approachAllies() {
+        const approach = _.map(this.room.creeps, friendly => ({ pos: friendly.pos, range: APPROACH_RANGE }));
+        return Movement.combatMove(this, approach, []);
+    }
+    avoidAllies() {
+        const avoid = _.map(this.room.creeps, friendly => ({ pos: friendly.pos, range: AVOID_RANGE }));
+        return Movement.combatMove(this, [], avoid);
+    }
+    maneuver(approachTargs, avoidTargs) {
+        const approach = _.map(approachTargs, targ => ({ pos: targ.pos, range: APPROACH_RANGE }));
+        const avoid = _.map(avoidTargs, targ => ({ pos: targ.pos, range: AVOID_RANGE }));
+        return Movement.combatMove(this, approach, avoid);
     }
     autoEngage(combatTarget) {
         const target = combatTarget ? [combatTarget.creep] : undefined;
@@ -26594,11 +26606,12 @@ class ActionParser {
      * Returns whether the action was valid.
      */
     static parseAction(actor, action, autoEngage = true) {
-        const [command, id] = action;
-        const targ = typeof id == 'string' ? Game.getObjectById(id) : null;
+        const command = action[0];
+        const predicate = action[1];
+        const targ = typeof predicate == 'string' ? Game.getObjectById(predicate) : null;
         switch (command) {
             case 'move':
-                actor.move(id);
+                actor.move(predicate);
                 break;
             case 'goTo':
                 if (targ)
@@ -26619,7 +26632,7 @@ class ActionParser {
                 if (targ) {
                     actor.heal(targ);
                 }
-                else if (typeof id != 'string') {
+                else if (typeof predicate != 'string') {
                     actor.heal(actor);
                 }
                 break;
@@ -26632,6 +26645,19 @@ class ActionParser {
                 break;
             case 'avoidHostiles':
                 actor.avoidHostiles();
+                break;
+            case 'approachAllies':
+                actor.approachAllies();
+                break;
+            case 'avoidAllies':
+                actor.avoidAllies();
+                break;
+            case 'maneuver':
+                const approachNames = predicate[0];
+                const avoidNames = predicate[1];
+                const approachTargs = _.map(approachNames, name => Game.creeps[name]);
+                const avoidTargs = _.map(avoidNames, name => Game.creeps[name]);
+                actor.maneuver(approachTargs, avoidTargs);
                 break;
             case 'noop':
                 break;
@@ -26717,7 +26743,8 @@ class ActionParser {
         // Run uncontrollable actors on a script
         for (const name in uncontrollableActors) {
             const bot = uncontrollableActors[name];
-            TrainingOpponents.stupidCombat(bot);
+            // TrainingOpponents.stupidCombat(bot);
+            TrainingOpponents.simpleCombat(bot);
         }
         // Log state according to verbosity
         if (RL_TRAINING_VERBOSITY == 0) {

@@ -4,17 +4,17 @@ import gym
 import ray
 from ray import tune
 from ray.rllib.agents.ppo import PPOTrainer
-from ray.rllib.agents.qmix import QMixTrainer
 
+from models.logger import on_episode_end
 from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
-from screeps_rl_env.processors_multiagent import CombatMultiAgentProcessor, ApproachMultiAgentProcessor
+from screeps_rl_env.processors_multiagent import CombatMultiAgentProcessor
 
 parser = argparse.ArgumentParser(description="Train multi-agent model")
-parser.add_argument("--model", type=str, default="APEX_QMIX")
+parser.add_argument("--model", type=str, default="PPO")
 parser.add_argument("--cluster", type=bool, default=False)  # not running_on_laptop())
-parser.add_argument("--num_workers", type=int, default=2)
+parser.add_argument("--num_workers", type=int, default=6)
 parser.add_argument("--num_envs_per_worker", type=int, default=5)
-parser.add_argument("--debug", type=bool, default=True)
+parser.add_argument("--debug", type=bool, default=False)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     print("Cluster resources:", ray.cluster_resources())
 
     # Generate agents
-    num_creeps_per_side = [2, 2]
+    num_creeps_per_side = [3, 4]
     creeps_player1 = [CreepAgent(1, i) for i in range(num_creeps_per_side[0])]
     creeps_player2 = [CreepAgent(2, i, is_bot=True) for i in range(num_creeps_per_side[1])]
     agents_all = [*creeps_player1, *creeps_player2]
@@ -73,7 +73,18 @@ if __name__ == "__main__":
         "remote_worker_envs": True,
         "env_config": {
             "agents": agents_all,
+            "randomize_bodies": True,
             "use_backend": False,
+        },
+        "callbacks": {
+            # "on_episode_start": tune.function(on_episode_start),
+            # "on_episode_step": tune.function(on_episode_step),
+            "on_episode_end": tune.function(lambda info:
+                                            on_episode_end(info, map(lambda agent: agent.agent_id,
+                                                                     agents_controllable))),
+            # "on_sample_end": tune.function(on_sample_end),
+            # "on_train_result": tune.function(on_train_result),
+            # "on_postprocess_traj": tune.function(on_postprocess_traj),
         },
     }
 
@@ -122,7 +133,8 @@ if __name__ == "__main__":
                     "use_backend": False,
                 },
                 "multiagent": {
-                    "policies": {creep.agent_id: (None, observation_space, action_space, {}) for creep in agents_controllable},
+                    "policies": {creep.agent_id: (None, observation_space, action_space, {}) for creep in
+                                 agents_controllable},
                     "policy_mapping_fn": tune.function(lambda agent_id: agent_id),
                 },
             }

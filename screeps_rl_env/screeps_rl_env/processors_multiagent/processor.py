@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple, List, Any
+from typing import Dict, Tuple, List, Any, Union
 
 import numpy as np
 
@@ -199,7 +199,7 @@ class ScreepsMultiAgentProcessor(ABC):
         return death_events
 
     @abstractmethod
-    def process_action(self, action: int, agent_id: str) -> Dict:
+    def process_action(self, action: Union[int, np.ndarray], agent_id: str) -> Dict:
         """
         Process an action, returning a command to be written to Overmind memory to tell the agent what to do
         :param action: int, direction to move (0-7, inclusive)
