@@ -15,7 +15,7 @@ function isAsync(fn) {
 }
 
 const methods = [
-	env.addEnv,
+	env.attachEnv,
 	env.listRoomNames,
 	env.resetTrainingEnvironment,
 	env.resetRoom,

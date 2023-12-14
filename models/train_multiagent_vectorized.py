@@ -6,13 +6,13 @@ from ray import tune
 from ray.rllib.agents.ppo import PPOTrainer
 
 from models.logger import on_episode_end
-from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent
+from screeps_rl_env import ScreepsMultiAgentVectorEnv, CreepAgent, ApproachMultiAgentProcessor
 from screeps_rl_env.processors_multiagent import CombatMultiAgentProcessor
 
 parser = argparse.ArgumentParser(description="Train multi-agent model")
 parser.add_argument("--model", type=str, default="PPO")
 parser.add_argument("--cluster", type=bool, default=False)  # not running_on_laptop())
-parser.add_argument("--num_workers", type=int, default=6)
+parser.add_argument("--num_workers", type=int, default=4)
 parser.add_argument("--num_envs_per_worker", type=int, default=5)
 parser.add_argument("--debug", type=bool, default=False)
 
@@ -27,8 +27,14 @@ if __name__ == "__main__":
 
     # Generate agents
     num_creeps_per_side = [3, 4]
-    creeps_player1 = [CreepAgent(1, i) for i in range(num_creeps_per_side[0])]
-    creeps_player2 = [CreepAgent(2, i, is_bot=True) for i in range(num_creeps_per_side[1])]
+    creeps_player1 = [
+        CreepAgent(1, i)
+        for i in range(num_creeps_per_side[0])
+    ]
+    creeps_player2 = [
+        CreepAgent(2, i, is_bot=True)
+        for i in range(num_creeps_per_side[1])
+    ]
     agents_all = [*creeps_player1, *creeps_player2]
     agents_controllable = list(filter(lambda creep: not creep.is_bot, agents_all))
 
@@ -42,8 +48,8 @@ if __name__ == "__main__":
     for group_id in empty_groups:
         del grouping[group_id]
 
-    processor = CombatMultiAgentProcessor
-    # processor = ApproachMultiAgentProcessor
+    # processor = CombatMultiAgentProcessor
+    processor = ApproachMultiAgentProcessor
 
     # Generate grouped observation space
     observation_space, action_space = ScreepsMultiAgentVectorEnv.get_spaces(agents_all, processor=processor)
@@ -147,7 +153,7 @@ if __name__ == "__main__":
                 "timesteps_total": 1e9,
             },
             config=config,
-            checkpoint_freq=100,
+            checkpoint_freq=5,
             checkpoint_at_end=True,
             reuse_actors=True,
             queue_trials=True

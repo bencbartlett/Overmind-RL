@@ -90,7 +90,7 @@ async function testAddingEnv() {
 	if (!env.server.started) {
 		throw new Error(`This should test adding env after server started`);
 	}
-	const roomName = await env.addEnv(3);
+	const roomName = await env.attachEnv(3);
 	console.log(`Terrain for room ${roomName}: `);
 	console.log(await env.getRoomTerrain(roomName, false));
 	console.log(`Room objects for ${roomName}: `, await env.getRoomObjects(roomName));
@@ -116,8 +116,8 @@ async function run() {
 
 	// testRoomIndexing(20);
 
-	await env.addEnv(0);
-	await env.addEnv(1);
+	await env.attachEnv(0);
+	await env.attachEnv(1);
 
 	await env.resetTrainingEnvironment();
 

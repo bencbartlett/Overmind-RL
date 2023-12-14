@@ -92,7 +92,7 @@ class ScreepsMultiAgentProcessor(ABC):
 
         owner = self.env.agents_dict[agent_id].player_name
 
-        return list(filter(lambda creep: creep['username'] == owner, all_creeps))
+        return list(filter(lambda creep: creep['username'] != owner, all_creeps))
 
     def get_enemies_allies_me(self, room_objects: List, agent_id: str,
                               include_tombstones=True) -> Tuple[List[Dict], List[Dict], Dict]:

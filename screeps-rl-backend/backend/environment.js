@@ -50,7 +50,7 @@ class ScreepsEnvironment {
 	 * Adds a room "environment" to the screeps world (used for vectorized
 	 * Python environments)
 	 */
-	async addEnv(index) {
+	async attachEnv(index) {
 		if (this.roomIndices.includes(index)) {
 			throw new Error(`Cannot add room environment with vector_index ${index}! ` +
 							`this.index = ${this.index}; this.roomIndices = ${this.roomIndices}`);

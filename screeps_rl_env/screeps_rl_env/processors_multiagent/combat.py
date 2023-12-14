@@ -196,11 +196,12 @@ class CombatMultiAgentProcessor(ScreepsMultiAgentProcessor):
         room_objects = room_state["roomObjects"]
         all_enemies_dead = len(self.get_enemies(room_objects, agent_id, include_tombstones=False)) == 0
         all_allies_dead = len(self.get_allies(room_objects, agent_id, include_self=True, include_tombstones=False)) == 0
-        info =  {"all_enemies_dead": all_enemies_dead, all_allies_dead: all_allies_dead}
+        info = {"all_enemies_dead": all_enemies_dead, all_allies_dead: all_allies_dead}
 
         if self.is_agent_alive(room_objects, agent_id):
             return ob, self.get_reward(room_state, agent_id), False, info
         else:
+            # print(f"Agent {agent_id} is dead! worker_index={self.env.worker_index}, vector_index={self.env.vector_index}")
             return ob, 0, True, info
 
         # if ob is not None:

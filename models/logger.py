@@ -17,12 +17,16 @@ def on_episode_step(info):
 def on_episode_end(info, agent_ids):
     episode = info["episode"]
 
-    victory = any(episode.last_info_for(agent_id).get("all_enemies_dead") for agent_id in agent_ids)
+    victory = int(any(episode.last_info_for(agent_id).get("all_enemies_dead") for agent_id in agent_ids))
+    defeat = int(any(episode.last_info_for(agent_id).get("all_allies_dead") for agent_id in agent_ids))
 
     # pole_angle = np.mean(episode.user_data["pole_angles"])
     # print("episode {} ended with length {} and pole angles {}".format(
     #     episode.episode_id, episode.length, pole_angle))
     episode.custom_metrics["victory"] = victory
+    episode.custom_metrics["defeat"] = defeat
+    episode.custom_metrics["draw"] = int(not victory and not defeat)
+
 
 
 def on_sample_end(info):

@@ -47,7 +47,7 @@ class ScreepsInterface:
             self.start_backend()
 
     def add_env(self, vector_index):
-        room_name = self.c.addEnv(vector_index)
+        room_name = self.c.attachEnv(vector_index)
         print("Environment with vector_index {} added as room {}".format(vector_index, room_name))
         self.all_rooms.append(room_name)
         return room_name
